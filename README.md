@@ -4,7 +4,7 @@ A library for quickly creating objects that have a SQLite database that backs th
 
 Creating a new DAO is easy. Extend the Model class, like so.
 
-```
+```java
 /**
  * An instance of a game
  */
@@ -18,7 +18,7 @@ public class Game extends Model<Game> {
 Inside the model, we'll list out all the variables we wish to persist. You must mark one of these variables as @Unique; this will be your key. The other variables must be of type String, int, boolean, long, float, or byte[]. If you don't want to persist a variable, or if you want to use a type other than the ones mentioned before, mark that variable as 
 transient.
 
-```
+```java
 // A unique identifier for this object
 @Unique
 private int id;
@@ -34,7 +34,7 @@ private int max_players;
 
 Now lets make queries easy. Create a static inner class that extends Model.Query, and add a few convience methods like id() and name().
 
-```
+```java
 public static class Query extends Model.Query<Game> {
     public Query(Context context) {
         super(Game.class, context);
@@ -69,22 +69,22 @@ public static class Query extends Model.Query<Game> {
 
 And, with that done, we can now query our database using the following methods
 
-```
+```java
 Game game = new Game.Query(getContext()).id(id).first();
 ```
-```
+```java
 List<Game> activeGames = new Game.Query(getContext()).active(true).all();
 ```
-```
+```java
 int numOfGames = new Game.Query(getContext()).count();
 ```
-```
+```java
 Game game = new Game.Query(getContext()).id(0).name("Hello World").insert();
 ```
 
 To edit or delete an entry, you'll have to expose the methods. They're marked as protected methods in Model, making all DAOs write-once by default.
 
-```
+```java
 @Override
 public void save() {
     super.save();
@@ -100,7 +100,7 @@ With that out of the way, you can now call mGame.save() and mGame.delete() in or
 
 The full class of Game is below.
 
-```
+```java
 /**
  * An instance of a game
  */
