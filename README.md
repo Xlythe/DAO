@@ -15,7 +15,7 @@ public class Game extends Model<Game> {
 }
 ```
 
-Inside the model, we'll list out all the variables we wish to persist. You must mark one of these variables as @Unique; this will be your key. The other variables must be of type String, int, boolean, long, float, or byte[]. If you don't want to persist a variable, or if you want to use a type other than the ones mentioned before, you must mark that variable as 
+Inside the model, we'll list out all the variables we wish to persist. You must mark one of these variables as @Unique; this will be your key. The other variables must be of type String, int, boolean, long, float, or byte[]. If you don't want to persist a variable, or if you want to use a type other than the ones mentioned before, mark that variable as 
 transient.
 
 ```
@@ -32,7 +32,7 @@ private int min_players;
 private int max_players;
 ```
 
-In order to make queries easy, lets make a static inner class that extends Model.Query.
+Now lets make queries easy. Create a static inner class that extends Model.Query, and add a few convience methods like id() and name().
 
 ```
 public static class Query extends Model.Query<Game> {
@@ -67,6 +67,17 @@ public static class Query extends Model.Query<Game> {
 }
 ```
 
+And, with that done, we can now query our database using the methods
+
+```
+Game game = new Game.Query(getContext()).id(id).first();
+```
+```
+List<Game> activeGames = new Game.Query(getContext()).active(true).all();
+```
+```
+int numOfGames = new Game.Query(getContext()).count();
+```
 
 ```
 /**
