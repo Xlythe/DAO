@@ -10,9 +10,6 @@ import android.os.Handler;
 import android.util.Base64;
 import android.util.Log;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -27,8 +24,12 @@ import java.lang.reflect.Modifier;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * A class that serializes its fields into a database
@@ -40,7 +41,7 @@ public abstract class Model<T extends Model> implements Serializable {
     private static transient int DATABASE_VERSION = 1;
     private static transient boolean RETAIN_DATA_ON_UPGRADE = false;
 
-    private static final transient BiMap<Class, Observer> OBSERVERS = HashBiMap.create();
+    private static final transient Map<Class<? extends Model>, Set<Observer>> OBSERVERS = new HashMap<>();
 
     private final transient Class<T> mClass;
     private final transient Context mContext;
@@ -48,12 +49,20 @@ public abstract class Model<T extends Model> implements Serializable {
     private transient ModelDataSource mDataSource;
     private transient Field[] mFields;
 
-    protected static void registerObserver(Class clazz, Observer observer) {
-        OBSERVERS.put(clazz, observer);
+    protected static void registerObserver(Class<? extends Model> clazz, Observer observer) {
+        Set<Observer> set = OBSERVERS.get(clazz);
+        if (set == null) {
+            set = new HashSet<>();
+        }
+        set.add(observer);
     }
 
-    protected static void unregisterObserver(Observer observer) {
-        OBSERVERS.inverse().remove(observer);
+    protected static void unregisterObserver(Class<? extends Model> clazz, Observer observer) {
+        Set<Observer> set = OBSERVERS.get(clazz);
+        if (set == null) {
+            set = new HashSet<>();
+        }
+        set.remove(observer);
     }
 
     public static void setDatabaseVersion(int version, boolean retainDataOnUpgrade) {
@@ -101,19 +110,23 @@ public abstract class Model<T extends Model> implements Serializable {
     protected void save() {
         open();
         mDataSource.save((T) this);
-        if (OBSERVERS.containsKey(mClass)) {
-            OBSERVERS.get(mClass).onChange();
-        }
+        notifyDataSetChanged();
         close();
     }
 
     protected void delete() {
         open();
         mDataSource.delete((T) this);
-        if (OBSERVERS.containsKey(mClass)) {
-            OBSERVERS.get(mClass).onChange();
-        }
+        notifyDataSetChanged();
         close();
+    }
+
+    private void notifyDataSetChanged() {
+        if (OBSERVERS.containsKey(mClass)) {
+            for (Observer observer : OBSERVERS.get(mClass)) {
+                observer.onChange();
+            }
+        }
     }
 
     protected static <B extends Model> B create(Class<B> clazz, Context context) {

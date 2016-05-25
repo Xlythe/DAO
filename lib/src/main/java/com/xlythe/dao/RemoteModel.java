@@ -1,6 +1,5 @@
 package com.xlythe.dao;
 
-import android.content.ContentValues;
 import android.content.Context;
 import android.util.Log;
 

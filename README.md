@@ -110,7 +110,7 @@ public class Game extends Model<Game> {
     }
 
     public static void unregisterObserver(Observer observer) {
-        unregisterObserver(observer);
+        unregisterObserver(Game.class, observer);
     }
 
     public static class Query extends Model.Query<Game> {
