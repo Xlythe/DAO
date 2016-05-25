@@ -67,7 +67,7 @@ public static class Query extends Model.Query<Game> {
 }
 ```
 
-And, with that done, we can now query our database using the methods
+And, with that done, we can now query our database using the following methods
 
 ```
 Game game = new Game.Query(getContext()).id(id).first();
@@ -78,6 +78,27 @@ List<Game> activeGames = new Game.Query(getContext()).active(true).all();
 ```
 int numOfGames = new Game.Query(getContext()).count();
 ```
+```
+Game game = new Game.Query(getContext()).id(0).name("Hello World").insert();
+```
+
+To edit or delete an entry, you'll have to expose the methods. They're marked as protected methods in Model, making all DAOs write-once by default.
+
+```
+@Override
+public void save() {
+    super.save();
+}
+
+@Override
+public void delete() {
+    super.delete();
+}
+```
+
+With that out of the way, you can now call mGame.save() and mGame.delete() in order to update the state.
+
+The full class of Game is below.
 
 ```
 /**
@@ -137,6 +158,16 @@ public class Game extends Model<Game> {
 
     public Game(Context context) {
         super(Game.class, context);
+    }
+
+    @Override
+    public void save() {
+        super.save();
+    }
+
+    @Override
+    public void delete() {
+        super.delete();
     }
 
     public int getId() {

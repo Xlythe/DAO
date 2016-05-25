@@ -36,7 +36,7 @@ import java.util.List;
  * All classes that extend Model must have a constructor that takes a context (and nothing else).
  */
 public abstract class Model<T extends Model> implements Serializable {
-    protected static final transient String TAG = "Deception";//Model.class.getSimpleName();
+    protected static final transient String TAG = Model.class.getSimpleName();
     private static transient int DATABASE_VERSION = 1;
     private static transient boolean RETAIN_DATA_ON_UPGRADE = false;
 
@@ -465,7 +465,7 @@ public abstract class Model<T extends Model> implements Serializable {
             return results.isEmpty() ? null : results.get(0);
         }
 
-        public Q create() {
+        public Q insert() {
             Q instance = Model.create(mClass, mContext);
             instance = (Q) instance.parse(getParams());
             instance.save();
