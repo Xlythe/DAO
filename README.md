@@ -1,8 +1,8 @@
 D(ata) A(access) O(object)
 ===========
-A library for quickly creating objects that have a SQLite database that backs them.
+A library for quickly creating objects that have a SQLite database that backs them. These objects are usually called DAOs, or data access objects; lightweight objects that hold information, without a lot of logic inside them outside of getters and setters.
 
-Creating a new DAO is easy. Extend the Model class, like so.
+To create a new DAO, extend the Model class, like so.
 
 ```java
 /**
@@ -15,8 +15,7 @@ public class Game extends Model<Game> {
 }
 ```
 
-Inside the model, we'll list out all the variables we wish to persist. You must mark one of these variables as @Unique; this will be your key. The other variables must be of type String, int, boolean, long, float, or byte[]. If you don't want to persist a variable, or if you want to use a type other than the ones mentioned before, mark that variable as 
-transient.
+Inside the model, we list out all the variables we wish to persist. One of these variables must be marked as @Unique; this will be your key. The key keeps this instance of your DAO unique from another instance with similar data. The other variables must be of type String, int, boolean, long, float, or byte[] -- other types are not supported. If you have a variable that you don't want persisted, mark it as a transient variable (eg. private transient Object mTempData).
 
 ```java
 // A unique identifier for this object
@@ -32,7 +31,7 @@ private int min_players;
 private int max_players;
 ```
 
-Now lets make queries easy. Create a static inner class that extends Model.Query, and add a few convience methods like id() and name().
+The Model class comes with a Query inner class, but we can extend it to make it easier to use. Lets add a few convenience methods like id() and name().
 
 ```java
 public static class Query extends Model.Query<Game> {
