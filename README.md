@@ -1,4 +1,4 @@
-D(ata) A(access) O(object)
+D(ata) A(ccess) O(bject)
 ===========
 A library for quickly creating objects that have a SQLite database that backs them. These objects are usually called DAOs, or data access objects; lightweight objects that hold information, without a lot of logic inside them outside of getters and setters.
 
