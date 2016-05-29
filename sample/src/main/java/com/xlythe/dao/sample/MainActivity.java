@@ -1,9 +1,12 @@
 package com.xlythe.dao.sample;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.ActivityOptionsCompat;
+import android.support.v4.util.Pair;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
@@ -40,6 +43,20 @@ public class MainActivity extends AppCompatActivity implements Model.Observer {
             public void onItemClick(Note note) {
                 editNote(note);
             }
+
+            @Override
+            public void onItemLongClick(final Note note) {
+                new AlertDialog.Builder(MainActivity.this)
+                        .setTitle(note.getTitle())
+                        .setMessage(note.getBody())
+                        .setPositiveButton(R.string.action_delete, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                note.delete();
+                            }
+                        })
+                        .show();
+            }
         });
 
         Note.registerObserver(this);
@@ -48,16 +65,20 @@ public class MainActivity extends AppCompatActivity implements Model.Observer {
 
     public void createNote(View view) {
         Intent intent = new Intent(this, DetailActivity.class);
-        ActivityOptionsCompat options = ActivityOptionsCompat.
-                makeSceneTransitionAnimation(this, view, "fab");
+        ActivityOptionsCompat options = ActivityOptionsCompat.makeSceneTransitionAnimation(
+                this,
+                Pair.create(view, "fab"),
+                Pair.create(findViewById(R.id.app_bar), "title"));
         startActivity(intent, options.toBundle());
     }
 
     public void editNote(Note note) {
         Intent intent = new Intent(this, DetailActivity.class);
         intent.putExtra(DetailActivity.EXTRA_NOTE, note);
-        ActivityOptionsCompat options = ActivityOptionsCompat.
-                makeSceneTransitionAnimation(this, findViewById(R.id.fab), "fab");
+        ActivityOptionsCompat options = ActivityOptionsCompat.makeSceneTransitionAnimation(
+                this,
+                Pair.create(findViewById(R.id.fab), "fab"),
+                Pair.create(findViewById(R.id.app_bar), "title"));
         startActivity(intent, options.toBundle());
     }
 
@@ -113,11 +134,19 @@ public class MainActivity extends AppCompatActivity implements Model.Observer {
                         listener.onItemClick(getNote());
                     }
                 });
+                mRoot.setOnLongClickListener(new View.OnLongClickListener() {
+                    @Override
+                    public boolean onLongClick(View v) {
+                        listener.onItemLongClick(getNote());
+                        return true;
+                    }
+                });
             }
         }
 
         public interface OnClickListener {
             void onItemClick(Note note);
+            void onItemLongClick(Note note);
         }
 
         private final Context mContext;
