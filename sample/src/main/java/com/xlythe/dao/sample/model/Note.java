@@ -35,11 +35,6 @@ public class Note extends Model<Note> {
             super(Note.class, context);
         }
 
-        public Note.Query id(int id) {
-            where(new Param("id", id));
-            return this;
-        }
-
         public Note.Query title(String title) {
             where(new Param("title", title));
             return this;
