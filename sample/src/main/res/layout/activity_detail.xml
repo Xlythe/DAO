@@ -21,6 +21,8 @@
             android:layout_marginTop="45dp"
             android:layout_marginLeft="15dp"
             android:layout_marginRight="15dp"
+            android:inputType="textCapWords|textAutoComplete"
+            android:singleLine="true"
             android:background="@android:color/transparent"
             android:textAppearance="?android:textAppearanceLarge"/>
 
@@ -34,6 +36,7 @@
         android:gravity="top|left"
         android:background="@android:color/transparent"
         android:layout_margin="10dp"
+        android:inputType="textCapSentences|textAutoComplete|textMultiLine"
         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
     <android.support.design.widget.FloatingActionButton

@@ -94,7 +94,7 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
                                 // Add all the items from the server to the local cache db
                                 List<Q> list = new ArrayList<Q>(response.length());
                                 for (int i = 0; i < response.length(); i++) {
-                                    Q instance = Transcriber.inflate(newInstance(getModelClass(), getContext()), response.getJSONObject(i));
+                                    Q instance = (Q) Transcriber.inflate(newInstance(getModelClass(), getContext()), response.getJSONObject(i));
                                     list.add(instance);
                                     model.getDataSource().save(instance);
                                 }
@@ -191,7 +191,7 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
                                 model.open();
 
                                 // Add all the items from the server to the local cache db
-                                Q instance = Transcriber.inflate(newInstance(getModelClass(), getContext()), response);
+                                Q instance = (Q) Transcriber.inflate(newInstance(getModelClass(), getContext()), response);
                                 model.getDataSource().save(instance);
 
                                 // Give the callback the new data
