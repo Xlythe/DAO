@@ -97,7 +97,7 @@ public void delete() {
 
 With that out of the way, you can now call mGame.save() and mGame.delete() in order to update the state.
 
-Making Changes to the DAO
+Updating the Version
 ------
 It's not uncommon to realize, belatedly, that you want to add another field to your DAO. At the top of the Note class, the database version and update strategy is listed. By default, DAOs start at version 1 and completely wipe the database when the version is incremented.
 
@@ -111,5 +111,6 @@ If you set retainDataOnUpgrade to true, then you must mark newly added fields wi
 private int priority;
 ```
 
-
+More Information
+------
 See the [full Note class](sample/src/main/java/com/xlythe/dao/sample/model/Note.java) inside the sample.
