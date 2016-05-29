@@ -7,7 +7,7 @@ import com.xlythe.dao.Database;
 import com.xlythe.dao.Model;
 import com.xlythe.dao.Param;
 
-@Database(version=6, retainDataOnUpgrade=false)
+@Database(version=1, retainDataOnUpgrade=false)
 public class Note extends Model<Note> {
     public static void registerObserver(Observer observer) {
         registerObserver(Note.class, observer);
