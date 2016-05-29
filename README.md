@@ -16,7 +16,7 @@ public class Note extends Model<Game> {
 }
 ```
 
-Inside the model, we list out all the variables we wish to persist. The oly supported types are String, int, boolean, long, float, or byte[]. If you have a variable that you don't want persisted, mark it as a transient variable (eg. private transient Object mTempData).
+Inside the model, we list out all the variables we wish to persist. The only supported types are String, int, boolean, long, float, or byte[]. If you have a variable that you don't want persisted, mark it as a transient variable (eg. private transient Object mTempData).
 Note: While not required, you can annotate your variables with @Unique. If you do, they will act as a key when saving the DAO. (eg. @Unique private String id).
 
 ```java
