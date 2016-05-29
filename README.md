@@ -4,20 +4,18 @@ A library for quickly creating objects that have a SQLite database that backs th
 
 Creating a Model
 ------
-To create a new DAO, extend the Model class, like so.
-Note: Your model must have a constructor that takes a Context. This is the constructor that will be used when inflating new instances.
+To create a new DAO, extend the Model class, like so. Your model must have a constructor that takes a Context. This is the constructor that will be used when inflating new instances.
 
 ```java
 @Database(version=1, retainDataOnUpgrade=false)
-public class Note extends Model<Game> {
+public class Note extends Model<Note> {
     public Note(Context context) {
         super(context);
     }
 }
 ```
 
-Inside the model, we list out all the variables we wish to persist. The only supported types are String, int, boolean, long, float, or byte[]. If you have a variable that you don't want persisted, mark it as a transient variable (eg. private transient Object mTempData).
-Note: While not required, you can annotate your variables with @Unique. If you do, they will act as a key when saving the DAO. (eg. @Unique private String id).
+Inside the model, we list out all the variables we wish to persist. The supported types are String, int, boolean, long, float, or byte[]. If you have a variable that you don't want persisted, mark it as a transient variable. While not required, you can annotate your variables with @Unique. If you do, they will act as a key when saving the DAO.
 
 ```java
 // The note's title
@@ -26,6 +24,12 @@ private String title;
 private String body;
 // The timestamp of the last update to the note
 private long timestamp;
+
+// Not persisted in this example
+private transient Object mTempData;
+// The key
+@Unique
+private String id;
 ```
 
 Querying
@@ -95,7 +99,7 @@ public void delete() {
 }
 ```
 
-With that out of the way, you can now call mGame.save() and mGame.delete() in order to update the state.
+With that out of the way, you can now call mNote.save() and mNote.delete() in order to update the state.
 
 Updating the Version
 ------
@@ -105,12 +109,60 @@ It's not uncommon to realize, belatedly, that you want to add another field to y
 @Database(version=1, retainDataOnUpgrade=false)
 ```
 
-If you set retainDataOnUpgrade to true, then you must mark newly added fields with the @Version(val=VERSION) annotation.
+If you set retainDataOnUpgrade to true, then you must mark newly added fields with the @Version(value=VERSION) annotation, where VERSION is when the field was added.
 ```java
-@Version(val=2)
+@Version(value=2)
 private int priority;
 ```
 
-More Information
+Summary
 ------
 See the [full Note class](sample/src/main/java/com/xlythe/dao/sample/model/Note.java) inside the sample.
+
+Remove Servers
+------
+
+DAO also has the ability to mirror remote databases if there's an available REST API. Instead of extending Model, extend RemoteModel.
+
+```java
+@Database(version=1, retainDataOnUpgrade=false)
+public class Note extends RemoteModel<Note> {
+    public Note(Context context) {
+        super(context);
+    }
+}
+```
+
+Your Query's all(), first(), and insert() methods all now come with optional Callback parameters, as well as a new url() method. 
+
+```java
+List<Note> cache = new Note.Query(getContext()).url("https://your.website.here/note").title("Hello World").all(new Callback<List<Note>>() {
+    @Override
+    public void onSuccess(List<Note> note) {
+        // TODO use the data from the server
+    }
+    
+    @Override
+    public void onFailure(Throwable throwable) {
+        Log.e(TAG, "Failed to reach server", throwable);
+    }
+});
+```
+
+The default implementation will call the url with no cookies, but will use the same parameters provided (?title=Hello%20World in the above example). To get more control over the connection, call setServer().
+
+```java
+RemoteModel.setServer(new Server() {
+    @Override
+    ublic void get(String url, RequestParams params, JsonHttpResponseHandler responseHandler) {}
+
+    @Override
+    public void post(String url, String json, JsonHttpResponseHandler responseHandler) {}
+    
+    @Override
+    public void put(String url, RequestParams params, JsonHttpResponseHandler responseHandler) {}
+    
+    @Override
+    public void delete(String url, JsonHttpResponseHandler responseHandler) {}
+});
+```
