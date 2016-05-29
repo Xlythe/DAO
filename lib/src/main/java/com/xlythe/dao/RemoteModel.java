@@ -1,6 +1,7 @@
 package com.xlythe.dao;
 
 import android.content.Context;
+import android.os.Handler;
 import android.util.Log;
 
 import com.loopj.android.http.AsyncHttpClient;
@@ -15,6 +16,8 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.xlythe.dao.Util.newInstance;
 
 /**
  * A class that serializes its fields into a database
@@ -35,8 +38,8 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
         SERVER = server;
     }
 
-    public RemoteModel(Class<T> clazz, Context context) {
-        super(clazz, context);
+    public RemoteModel(Context context) {
+        super(context);
     }
 
     // TODO save changes to remote server
@@ -49,123 +52,9 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
         super.delete();
     }
 
-    private static <A extends RemoteModel> void query(Class<A> clazz, Context context, String url, final Callback<List<A>> callback, Param... params) {
-        Log.d(TAG, "query: " + url);
-
-        final RemoteModel<A> model = Model.create(clazz, context);
-
-        // Open the db
-        model.open();
-
-        // Create params
-        final RequestParams requestParams = new RequestParams();
-        for(Param param : params) {
-            requestParams.add(param.getKey(), param.getValue());
-        }
-
-        final List<A> cache = model.getDataSource().query(params);
-
-        // Send call to server
-        if (callback != null) {
-            getServer(context).get(url, requestParams, new JsonHttpResponseHandler() {
-                @Override
-                public void onSuccess(int statusCode, Header[] headers, final JSONArray response) {
-                    model.getHandler().post(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                // Add all the items from the server to the local cache db
-                                List<A> list = new ArrayList<A>(response.length());
-                                for (int i = 0; i < response.length(); i++) {
-                                    A instance = model.parse(response.getJSONObject(i));
-                                    list.add(instance);
-                                    model.getDataSource().save(instance);
-                                }
-
-                                // Clean up any items in the cache that didn't exist on the server
-                                Log.d(TAG, "Checking cache for any old variables");
-                                for (A instance : cache) {
-                                    if (!list.contains(instance)) {
-                                        Log.d(TAG, "Deleting instance");
-                                        instance.delete();
-                                    }
-                                }
-
-                                // Give the callback the new data
-                                callback.onSuccess(list);
-                            } catch (JSONException e) {
-                                Log.e(TAG, "Exception parsing fields from JSON Object", e);
-                            }
-                            model.close();
-                        }
-                    });
-                }
-
-                @Override
-                public void onFailure(int statusCode, Header[] headers, String responseString, final Throwable throwable) {
-                    model.getHandler().post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Log.e(TAG, "Failed: ", throwable);
-                            model.close();
-                        }
-                    });
-                }
-            });
-        }
-    }
-
-    private static <A extends RemoteModel> void create(Class<A> clazz, Context context, String url, final Callback<A> callback, Param... params) {
-        Log.d(TAG, "create: " + url);
-
-        final RemoteModel<A> model = (RemoteModel<A>) create(clazz, context).parse(params);
-
-        // Open the db
-        model.open();
-
-        // Create params
-        final RequestParams requestParams = new RequestParams();
-        for(Param param : params) {
-            requestParams.add(param.getKey(), param.getValue());
-        }
-
-        // Send call to server
-        if (callback != null) {
-            getServer(context).post(url, model.getJSONObject((A) model).toString(), new JsonHttpResponseHandler() {
-                @Override
-                public void onSuccess(int statusCode, Header[] headers, final JSONObject response) {
-                    Log.d(TAG, "Creation response: " + response);
-                    model.getHandler().post(new Runnable() {
-                        @Override
-                        public void run() {
-                            // Add all the items from the server to the local cache db
-                            A instance = model.parse(response);
-                            model.getDataSource().save(instance);
-
-                            // Give the callback the new data
-                            callback.onSuccess(instance);
-                            model.close();
-                        }
-                    });
-                }
-
-                @Override
-                public void onFailure(int statusCode, Header[] headers, String responseString, final Throwable throwable) {
-                    Log.e(TAG, "Failed: ", throwable);
-                    model.getHandler().post(new Runnable() {
-                        @Override
-                        public void run() {
-                            callback.onFailure(throwable);
-                            model.close();
-                        }
-                    });
-                }
-            });
-        }
-    }
-
     protected static class Query<Q extends RemoteModel> extends Model.Query<Q> {
         private String mUrl;
+        private Handler mHandler = new Handler();
 
         public Query(Class<Q> clazz, Context context) {
             super(clazz, context);
@@ -180,12 +69,70 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
             return all(null);
         }
 
-        public List<Q> all(Callback<List<Q>> callback) {
-            // Query the server for new results (this will update the database)
-            RemoteModel.query(getModelClass(), getContext(), mUrl, callback, getParams());
+        public List<Q> all(final Callback<List<Q>> callback) {
+            final List<Q> cache = super.all();
 
-            // Return the cache
-            return super.all();
+            // Don't ping the server if a callback wasn't sent
+            if (callback != null) {
+                return cache;
+            }
+
+            final RequestParams requestParams = new RequestParams();
+            for(Param param : getParams()) {
+                requestParams.add(param.getKey(), param.getValue());
+            }
+
+            getServer(getContext()).get(mUrl, requestParams, new JsonHttpResponseHandler() {
+                @Override
+                public void onSuccess(int statusCode, Header[] headers, final JSONArray response) {
+                    mHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            final Q model = newInstance(getModelClass(), getContext());
+                            try {
+                                model.open();
+                                // Add all the items from the server to the local cache db
+                                List<Q> list = new ArrayList<Q>(response.length());
+                                for (int i = 0; i < response.length(); i++) {
+                                    Q instance = Transcriber.inflate(newInstance(getModelClass(), getContext()), response.getJSONObject(i));
+                                    list.add(instance);
+                                    model.getDataSource().save(instance);
+                                }
+
+                                // Clean up any items in the cache that didn't exist on the server
+                                Log.d(TAG, "Checking cache for any old variables");
+                                for (Q instance : cache) {
+                                    if (!list.contains(instance)) {
+                                        Log.d(TAG, "Deleting instance");
+                                        instance.delete();
+                                    }
+                                }
+
+                                // Give the callback the new data
+                                callback.onSuccess(list);
+                            } catch (JSONException e) {
+                                Log.e(TAG, "Exception parsing fields from JSON Object", e);
+                                callback.onFailure(e);
+                            } finally {
+                                model.close();
+                            }
+                        }
+                    });
+                }
+
+                @Override
+                public void onFailure(int statusCode, Header[] headers, String responseString, final Throwable throwable) {
+                    mHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Log.e(TAG, "Failed: ", throwable);
+                            callback.onFailure(throwable);
+                        }
+                    });
+                }
+            });
+
+            return cache;
         }
 
         public Q first() {
@@ -193,36 +140,81 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
         }
 
         public Q first(final Callback<Q> callback) {
+            Q cache = super.first();
+
+            if (callback == null) {
+                return cache;
+            }
+
             // Query the server for new results (this will update the database)
-            RemoteModel.query(getModelClass(), getContext(), mUrl, new Callback<List<Q>>() {
+            all(new Callback<List<Q>>() {
                 @Override
                 public void onSuccess(List<Q> results) {
-                    if (callback != null) {
-                        callback.onSuccess(results.isEmpty() ? null : results.get(0));
-                    }
+                    callback.onSuccess(results.isEmpty() ? null : results.get(0));
                 }
 
                 @Override
                 public void onFailure(Throwable throwable) {
-                    if (callback != null) {
-                        callback.onFailure(throwable);
-                    }
+                    callback.onFailure(throwable);
                 }
-            }, getParams());
+            });
 
             // Return the cache
-            return super.first();
+            return cache;
         }
 
-        public Q create() {
-            return create(null);
+        public Q insert() {
+            return insert(null);
         }
 
-        public Q create(final Callback<Q> callback) {
-            // Tell the server to create the object
-            RemoteModel.create(getModelClass(), getContext(), mUrl, callback, getParams());
+        public Q insert(final Callback<Q> callback) {
+            final Q cache = super.insert();
 
-            // Don't call super. We want the server to create the object, and we'll clone it.
+            // Don't ping the server if a callback wasn't sent
+            if (callback != null) {
+                return cache;
+            }
+
+            final RequestParams requestParams = new RequestParams();
+            for(Param param : getParams()) {
+                requestParams.add(param.getKey(), param.getValue());
+            }
+
+            getServer(getContext()).post(mUrl, Transcriber.getJSONObject(cache).toString(), new JsonHttpResponseHandler() {
+                @Override
+                public void onSuccess(int statusCode, Header[] headers, final JSONObject response) {
+                    mHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            final Q model = newInstance(getModelClass(), getContext());
+                            try {
+                                model.open();
+
+                                // Add all the items from the server to the local cache db
+                                Q instance = Transcriber.inflate(newInstance(getModelClass(), getContext()), response);
+                                model.getDataSource().save(instance);
+
+                                // Give the callback the new data
+                                callback.onSuccess(instance);
+                            } finally {
+                                model.close();
+                            }
+                        }
+                    });
+                }
+
+                @Override
+                public void onFailure(int statusCode, Header[] headers, String responseString, final Throwable throwable) {
+                    mHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Log.e(TAG, "Failed: ", throwable);
+                            callback.onFailure(throwable);
+                        }
+                    });
+                }
+            });
+
             return null;
         }
     }
