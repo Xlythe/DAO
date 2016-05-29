@@ -105,7 +105,7 @@ It's not uncommon to realize, belatedly, that you want to add another field to y
 @Database(version=1, retainDataOnUpgrade=false)
 ```
 
-If you set retainDataOnUpgrade to true, then you must mark newly added fields with the @Version(val=2) annotation.
+If you set retainDataOnUpgrade to true, then you must mark newly added fields with the @Version(val=VERSION) annotation.
 ```java
 @Version(val=2)
 private int priority;
