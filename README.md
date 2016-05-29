@@ -154,7 +154,7 @@ The default implementation will call the url with no cookies, but will use the s
 ```java
 RemoteModel.setServer(new Server() {
     @Override
-    ublic void get(String url, RequestParams params, JsonHttpResponseHandler responseHandler) {}
+    public void get(String url, RequestParams params, JsonHttpResponseHandler responseHandler) {}
 
     @Override
     public void post(String url, String json, JsonHttpResponseHandler responseHandler) {}
