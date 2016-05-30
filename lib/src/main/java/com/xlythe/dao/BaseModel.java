@@ -34,10 +34,13 @@ import static com.xlythe.dao.Util.newInstance;
  */
 public abstract class BaseModel<T extends BaseModel> implements Serializable {
     private static final String TAG = BaseModel.class.getSimpleName();
+    private static final String _ID = "_id";
 
     private transient Context mContext;
     private transient Field[] mFields;
     private transient ModelDataSource mDataSource;
+
+    private long _id;
 
     public BaseModel(Context context) {
         setContext(context);
@@ -47,12 +50,19 @@ public abstract class BaseModel<T extends BaseModel> implements Serializable {
         mContext = context;
 
         ArrayList<Field> fields = new ArrayList<>();
-        for (Field field : getClass().getDeclaredFields()) {
+        for (Field field : getModelClass().getDeclaredFields()) {
             field.setAccessible(true);
             if (!Modifier.isTransient(field.getModifiers())
                     && !Modifier.isStatic(field.getModifiers())) {
                 fields.add(field);
             }
+        }
+        try {
+            Field field = BaseModel.class.getDeclaredField(_ID);
+            field.setAccessible(true);
+            fields.add(field);
+        } catch (NoSuchFieldException e) {
+            Log.e(TAG, "Failed to find field _ID", e);
         }
         mFields = fields.toArray(new Field[fields.size()]);
 
@@ -171,6 +181,13 @@ public abstract class BaseModel<T extends BaseModel> implements Serializable {
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             }
+
+            // If no unique values were set, use the _id value instead.
+            if (params.isEmpty()) {
+                return new Param[] { new Param(_ID, _id) };
+            }
+
+            // Otherwise, ignore _id and use their unique values
             return params.toArray(new Param[params.size()]);
         }
 
@@ -222,34 +239,40 @@ public abstract class BaseModel<T extends BaseModel> implements Serializable {
         }
 
         public void create(T instance) {
-            Log.d(TAG, "Saving");
-            ContentValues values = getContentValues(instance);
             Log.d(TAG, "Creating new entry");
+            ContentValues values = getContentValues(instance);
             database.insert(getTableName(), null, values);
+        }
+
+        public void update(T instance) {
+            String query = createQuery(getUniqueParams(instance));
+            Log.d(TAG, "Updating existing entry. query{" + query + "}");
+            ContentValues values = getContentValues(instance);
+            database.update(getTableName(), values, query, null);
         }
 
         public void save(T instance) {
             Log.d(TAG, "Saving");
-            ContentValues values = getContentValues(instance);
             Param[] params = getUniqueParams(instance);
             long count = count(params);
             if (count == 0) {
-                Log.d(TAG, "Creating new entry");
-                database.insert(getTableName(), null, values);
+                create(instance);
             } else {
-                Log.d(TAG, "Updating existing entry");
-                database.update(getTableName(), values, createQuery(params), null);
+                update(instance);
             }
         }
 
         public void delete(T instance) {
-            Log.d(TAG, "Deleting");
-            int rowsDeleted = database.delete(getTableName(), createQuery(getUniqueParams(instance)), null);
+            String query = createQuery(getUniqueParams(instance));
+            Log.d(TAG, "Deleting. query{" + query + "}");
+            int rowsDeleted = database.delete(getTableName(), query, null);
             Log.d(TAG, "Removed " + rowsDeleted + " rows");
         }
 
         public long count(Param... params) {
-            return DatabaseUtils.queryNumEntries(database, getTableName(), createQuery(params));
+            String query = createQuery(params);
+            Log.d(TAG, "Counting. query{" + query + "}");
+            return DatabaseUtils.queryNumEntries(database, getTableName(), query);
         }
 
         public List<T> query(String orderBy, Param... params) {
@@ -298,10 +321,17 @@ public abstract class BaseModel<T extends BaseModel> implements Serializable {
             public ModelHelper(Context context, String databaseName) {
                 super(context, databaseName, null, getDatabaseVersion());
 
-                StringBuilder builder = new StringBuilder("create table if not exists " + getTableName() +
-                        "(_id integer primary key autoincrement");
+                StringBuilder builder = new StringBuilder();
+                builder.append("create table if not exists ");
+                builder.append(getTableName());
+                builder.append("(");
+                builder.append(_ID);
+                builder.append(" integer primary key autoincrement");
 
                 for (int i = 0; i < columns.length; i++) {
+                    if (_ID.equals(columns[i])) {
+                        continue;
+                    }
                     builder.append(", ");
                     builder.append(columns[i]);
                     builder.append(" ");
