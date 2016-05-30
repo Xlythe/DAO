@@ -35,6 +35,7 @@ import static com.xlythe.dao.Util.newInstance;
 public abstract class BaseModel<T extends BaseModel> implements Serializable {
     private static final String TAG = BaseModel.class.getSimpleName();
     private static final String _ID = "_id";
+    private static final boolean DEBUG = false;
 
     private transient Context mContext;
     private transient Field[] mFields;
@@ -239,21 +240,21 @@ public abstract class BaseModel<T extends BaseModel> implements Serializable {
         }
 
         public void create(T instance) {
-            Log.d(TAG, "Creating new entry");
             ContentValues values = getContentValues(instance);
             values.remove(_ID);
+            if (DEBUG) Log.d(TAG, "Creating new entry values{" + values + "}");
             database.insert(getTableName(), null, values);
         }
 
         public void update(T instance) {
             String query = createQuery(getUniqueParams(instance));
-            Log.d(TAG, "Updating existing entry. query{" + query + "}");
+            if (DEBUG) Log.d(TAG, "Updating existing entry. query{" + query + "}");
             ContentValues values = getContentValues(instance);
             database.update(getTableName(), values, query, null);
         }
 
         public void save(T instance) {
-            Log.d(TAG, "Saving");
+            if (DEBUG) Log.d(TAG, "Saving");
             Param[] params = getUniqueParams(instance);
             long count = count(params);
             if (count == 0) {
@@ -265,14 +266,14 @@ public abstract class BaseModel<T extends BaseModel> implements Serializable {
 
         public void delete(T instance) {
             String query = createQuery(getUniqueParams(instance));
-            Log.d(TAG, "Deleting. query{" + query + "}");
+            if (DEBUG) Log.d(TAG, "Deleting. query{" + query + "}");
             int rowsDeleted = database.delete(getTableName(), query, null);
-            Log.d(TAG, "Removed " + rowsDeleted + " rows");
+            Log.i(TAG, "Removed " + rowsDeleted + " rows");
         }
 
         public long count(Param... params) {
             String query = createQuery(params);
-            Log.d(TAG, "Counting. query{" + query + "}");
+            if (DEBUG) Log.d(TAG, "Counting. query{" + query + "}");
             return DatabaseUtils.queryNumEntries(database, getTableName(), query);
         }
 
