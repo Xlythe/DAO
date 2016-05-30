@@ -51,6 +51,7 @@ public class DetailActivity extends AppCompatActivity {
             new Note.Query(this)
                     .title(getNoteTitle())
                     .body(getNoteBody())
+                    .timestamp(System.currentTimeMillis())
                     .insert();
         }
         supportFinishAfterTransition();

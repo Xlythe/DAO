@@ -51,7 +51,7 @@ public class Note extends Model<Note> {
         }
 
         public Note.Query orderByTimestamp() {
-            orderBy("timestamp");
+            orderBy("timestamp DESC");
             return this;
         }
 
