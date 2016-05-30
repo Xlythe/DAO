@@ -16,5 +16,7 @@
         android:id="@+id/body"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textAppearance="?android:textAppearanceMedium" />
+        android:textAppearance="?android:textAppearanceMedium"
+        android:maxLines="2"
+        android:ellipsize="end" />
 </LinearLayout>

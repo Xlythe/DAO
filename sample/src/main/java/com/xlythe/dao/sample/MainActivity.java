@@ -8,7 +8,6 @@ import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.util.Pair;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
@@ -34,7 +33,6 @@ public class MainActivity extends AppCompatActivity implements Model.Observer {
 
         RecyclerView list = (RecyclerView) findViewById(R.id.list);
         list.setLayoutManager(new LinearLayoutManager(this));
-        list.setItemAnimator(new DefaultItemAnimator());
 
         mNoteAdapter = new NoteAdapter(this);
         list.setAdapter(mNoteAdapter);

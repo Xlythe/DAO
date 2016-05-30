@@ -6,6 +6,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import com.xlythe.dao.sample.model.Note;
 
@@ -38,7 +39,7 @@ public class DetailActivity extends AppCompatActivity {
     public void save(View view) {
         if (TextUtils.isEmpty(getNoteTitle())) {
             Log.w(TAG, "Ignoring attempt to set empty note title");
-            supportFinishAfterTransition();
+            Toast.makeText(this, R.string.warning_set_title, Toast.LENGTH_SHORT).show();
             return;
         }
 

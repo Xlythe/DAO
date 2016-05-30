@@ -3,6 +3,8 @@
 
     <string name="action_delete">Delete</string>
 
+    <string name="warning_set_title">Set a title to save</string>
+
     <string name="hint_title">Title</string>
     <string name="hint_body">Body</string>
 </resources>
