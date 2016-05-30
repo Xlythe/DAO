@@ -3,6 +3,7 @@
 
     <string name="action_delete">Delete</string>
 
+    <string name="empty_text">Looks like you don\'t have any notes yet. Tap on the + in the bottom right to get started.</string>
     <string name="warning_set_title">Set a title to save</string>
 
     <string name="hint_title">Title</string>

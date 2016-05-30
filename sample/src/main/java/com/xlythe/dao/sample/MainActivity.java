@@ -82,6 +82,7 @@ public class MainActivity extends AppCompatActivity implements Model.Observer {
 
     private void invalidateCursor() {
         mNoteAdapter.setCursor(new Note.Query(this).orderByTimestamp().cursor());
+        findViewById(R.id.empty_view).setVisibility(mNoteAdapter.getCursor().getCount() > 0 ? View.GONE : View.VISIBLE);
     }
 
     @Override
@@ -162,6 +163,10 @@ public class MainActivity extends AppCompatActivity implements Model.Observer {
 
             mCursor = cursor;
             notifyDataSetChanged();
+        }
+
+        public Note.Cursor getCursor() {
+            return mCursor;
         }
 
         public void setOnClickListener(OnClickListener listener) {
