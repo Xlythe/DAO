@@ -2,12 +2,15 @@ package com.xlythe.dao.sample;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 
 import com.xlythe.dao.sample.model.Note;
 
 public class DetailActivity extends AppCompatActivity {
+    private static final String TAG = DetailActivity.class.getSimpleName();
     public static final String EXTRA_NOTE = "note";
 
     private Note mNote;
@@ -33,17 +36,31 @@ public class DetailActivity extends AppCompatActivity {
     }
 
     public void save(View view) {
+        if (TextUtils.isEmpty(getNoteTitle())) {
+            Log.w(TAG, "Ignoring attempt to set empty note title");
+            supportFinishAfterTransition();
+            return;
+        }
+
         if (mNote != null) {
-            mNote.setTitle(mTitleView.getText().toString());
-            mNote.setBody(mBodyView.getText().toString());
+            mNote.setTitle(getNoteTitle());
+            mNote.setBody(getNoteBody());
             mNote.save();
         } else {
             new Note.Query(this)
-                    .title(mTitleView.getText().toString())
-                    .body(mBodyView.getText().toString())
+                    .title(getNoteTitle())
+                    .body(getNoteBody())
                     .insert();
         }
         supportFinishAfterTransition();
+    }
+
+    private String getNoteTitle() {
+        return mTitleView.getText().toString();
+    }
+
+    private String getNoteBody() {
+        return mBodyView.getText().toString();
     }
 
 }
