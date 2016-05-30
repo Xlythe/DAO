@@ -241,6 +241,7 @@ public abstract class BaseModel<T extends BaseModel> implements Serializable {
         public void create(T instance) {
             Log.d(TAG, "Creating new entry");
             ContentValues values = getContentValues(instance);
+            values.remove(_ID);
             database.insert(getTableName(), null, values);
         }
 
