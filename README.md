@@ -6,7 +6,7 @@ Where to Download
 -----------------
 ```groovy
 dependencies {
-  compile 'com.xlythe:android-text-manager:0.0.3'
+  compile 'com.xlythe:data-access-object:0.0.1'
 }
 ```
 
