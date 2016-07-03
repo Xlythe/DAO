@@ -1,9 +1,17 @@
 D(ata) A(ccess) O(bject)
-===========
+========================
 A library for quickly creating objects that have a SQLite database that backs them. These objects are usually called DAOs, or data access objects; lightweight objects that hold information, without a lot of logic inside them outside of getters and setters.
 
+Where to Download
+-----------------
+```groovy
+dependencies {
+  compile 'com.xlythe:data-access-object:0.0.1'
+}
+```
+
 Creating a Model
-------
+----------------
 To create a new DAO, extend the Model class, like so. Your model must have a constructor that takes a Context. This is the constructor that will be used when inflating new instances.
 
 ```java
@@ -33,7 +41,7 @@ private String id;
 ```
 
 Querying
-------
+--------
 The Model class comes with a Query inner class, but we can extend it to make it easier to use. Lets add a few convenience methods like title() and body() so that we can filter against them. We'll also add orderByTimestamp() as a sorting option.
 
 ```java
@@ -84,7 +92,7 @@ Note note = new Note.Query(getContext()).title("Hello World").body("This is my n
 ```
 
 Saving and Deleting
-------
+-------------------
 To edit or delete an entry, you'll have to expose the methods. They're marked as protected methods in Model, making all DAOs write-once by default.
 
 ```java
@@ -102,7 +110,7 @@ public void delete() {
 With that out of the way, you can now call mNote.save() and mNote.delete() in order to update the state.
 
 Updating the Version
-------
+--------------------
 It's not uncommon to realize, belatedly, that you want to add another field to your DAO. At the top of the Note class, the database version and update strategy is listed. By default, DAOs start at version 1 and completely wipe the database when the version is incremented.
 
 ```java
@@ -116,11 +124,11 @@ private int priority;
 ```
 
 Summary
-------
+-------
 See the [full Note class](sample/src/main/java/com/xlythe/dao/sample/model/Note.java) inside the sample.
 
 Remove Servers
-------
+--------------
 
 DAO also has the ability to mirror remote databases if there's an available REST API. Instead of extending Model, extend RemoteModel.
 
