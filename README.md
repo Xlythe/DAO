@@ -157,7 +157,7 @@ List<Note> cache = new Note.Query(getContext()).url("https://your.website.here/n
 });
 ```
 
-The default implementation will call the url with no cookies, but will use the same parameters provided (?title=Hello%20World in the above example). To get more control over the connection, call setServer().
+The default implementation will call the url with no cookies, but will use the same parameters provided (?title=Hello%20World in the above example). To get more control over the connection, call RemoteModel.setServer().
 
 ```java
 RemoteModel.setServer(new Server() {
@@ -173,4 +173,9 @@ RemoteModel.setServer(new Server() {
     @Override
     public void delete(String url, JsonHttpResponseHandler responseHandler) {}
 });
+```
+
+And lastly, don't forget the internet permission.
+```xml
+<uses-permission android:name="android.permission.INTERNET" />
 ```
