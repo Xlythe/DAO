@@ -6,7 +6,7 @@ Where to Download
 -----------------
 ```groovy
 dependencies {
-  compile 'com.xlythe:data-access-object:0.0.1'
+  compile 'com.xlythe:data-access-object:0.0.2'
 }
 ```
 
@@ -141,7 +141,7 @@ public class Note extends RemoteModel<Note> {
 }
 ```
 
-Your Query's all(), first(), and insert() methods all now come with optional Callback parameters, as well as a new url() method. 
+Your Query's all(), first(), and insert() methods all now come with optional Callback parameters, as well as a new url() method.
 
 ```java
 List<Note> cache = new Note.Query(getContext()).url("https://your.website.here/note").title("Hello World").all(new Callback<List<Note>>() {
@@ -149,7 +149,7 @@ List<Note> cache = new Note.Query(getContext()).url("https://your.website.here/n
     public void onSuccess(List<Note> note) {
         // TODO use the data from the server
     }
-    
+
     @Override
     public void onFailure(Throwable throwable) {
         Log.e(TAG, "Failed to reach server", throwable);
@@ -157,7 +157,7 @@ List<Note> cache = new Note.Query(getContext()).url("https://your.website.here/n
 });
 ```
 
-The default implementation will call the url with no cookies, but will use the same parameters provided (?title=Hello%20World in the above example). To get more control over the connection, call setServer().
+The default implementation will call the url with no cookies, but will use the same parameters provided (?title=Hello%20World in the above example). To get more control over the connection, call RemoteModel.setServer().
 
 ```java
 RemoteModel.setServer(new Server() {
@@ -166,11 +166,16 @@ RemoteModel.setServer(new Server() {
 
     @Override
     public void post(String url, String json, JsonHttpResponseHandler responseHandler) {}
-    
+
     @Override
     public void put(String url, RequestParams params, JsonHttpResponseHandler responseHandler) {}
-    
+
     @Override
     public void delete(String url, JsonHttpResponseHandler responseHandler) {}
 });
+```
+
+And lastly, don't forget the internet permission.
+```xml
+<uses-permission android:name="android.permission.INTERNET" />
 ```
