@@ -34,8 +34,8 @@ import static com.xlythe.dao.Util.newInstance;
  */
 public abstract class BaseModel<T extends BaseModel> implements Serializable {
     private static final String TAG = BaseModel.class.getSimpleName();
-    private static final String _ID = "_id";
     private static final boolean DEBUG = false;
+    static final String _ID = "_id";
 
     private transient Context mContext;
     private transient Field[] mFields;
@@ -76,6 +76,19 @@ public abstract class BaseModel<T extends BaseModel> implements Serializable {
 
     protected ModelDataSource getDataSource() {
         return mDataSource;
+    }
+
+    protected Object getUniqueKey() {
+        for (Field field : mFields) {
+            if (isUnique(field)) {
+                try {
+                    return field.get(this);
+                } catch (IllegalAccessException e) {
+                    Log.e(TAG, "Failed to access field " + field.getName(), e);
+                }
+            }
+        }
+        return null;
     }
 
     protected void open() {

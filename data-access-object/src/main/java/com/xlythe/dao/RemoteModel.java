@@ -38,18 +38,92 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
         SERVER = server;
     }
 
+    private String mUrl;
+
     public RemoteModel(Context context) {
         super(context);
     }
 
-    // TODO save changes to remote server
-    protected void save() {
-        super.save();
+    protected void setUrl(String url) {
+        mUrl = url;
     }
 
-    // TODO delete on remote server
-    protected void delete() {
-        super.delete();
+    protected void save(final Callback<T> callback) {
+        if (mUrl == null) {
+            throw new IllegalStateException("No url set");
+        }
+        if (callback == null) {
+            Log.w(TAG, "No callback set, ignoring");
+            return;
+        }
+
+        final Handler handler = new Handler();
+        getServer(getContext()).post(mUrl, Transcriber.getJSONObject((T) this).toString(), new JsonHttpResponseHandler() {
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, final JSONObject response) {
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        final T model = (T) RemoteModel.this;
+                        // Add all the items from the server to the local cache db
+                        Transcriber.inflate(model, response);
+                        model.save();
+                        callback.onSuccess(model);
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, String responseString, final Throwable throwable) {
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Log.e(TAG, "Failed: ", throwable);
+                        callback.onFailure(throwable);
+                    }
+                });
+            }
+        });
+    }
+
+    protected void delete(final Callback<Void> callback) {
+        if (mUrl == null) {
+            throw new IllegalStateException("No url set");
+        }
+        if (callback == null) {
+            Log.w(TAG, "No callback set, ignoring");
+            return;
+        }
+
+        final Handler handler = new Handler();
+        getServer(getContext()).delete(mUrl + "/" + getUniqueKey(), new JsonHttpResponseHandler() {
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, final JSONObject response) {
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        final T model = (T) RemoteModel.this;
+                        try {
+                            model.delete();
+                        } catch (Exception e) {
+                            Log.e(TAG, "Failed to delete cache", e);
+                        }
+                        callback.onSuccess(null);
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, String responseString, final Throwable throwable) {
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Log.e(TAG, "Failed: ", throwable);
+                        callback.onFailure(throwable);
+                    }
+                });
+            }
+        });
     }
 
     protected static class Query<Q extends RemoteModel> extends Model.Query<Q> {
@@ -73,7 +147,8 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
             final List<Q> cache = super.all();
 
             // Don't ping the server if a callback wasn't sent
-            if (callback != null) {
+            if (callback == null) {
+                Log.w(TAG, "No callback set, returning cached data");
                 return cache;
             }
 
@@ -143,6 +218,7 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
             Q cache = super.first();
 
             if (callback == null) {
+                Log.w(TAG, "No callback set, returning cached data");
                 return cache;
             }
 
@@ -171,13 +247,9 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
             final Q cache = super.insert();
 
             // Don't ping the server if a callback wasn't sent
-            if (callback != null) {
+            if (callback == null) {
+                Log.w(TAG, "No callback set, returning cached data");
                 return cache;
-            }
-
-            final RequestParams requestParams = new RequestParams();
-            for(Param param : getParams()) {
-                requestParams.add(param.getKey(), param.getValue());
             }
 
             getServer(getContext()).post(mUrl, Transcriber.getJSONObject(cache).toString(), new JsonHttpResponseHandler() {

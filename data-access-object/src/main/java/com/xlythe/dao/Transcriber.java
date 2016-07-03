@@ -49,6 +49,10 @@ public class Transcriber {
     static <A extends BaseModel<A>> A inflate(A instance, JSONObject object) {
         try {
             for (Field field : instance.getFields()) {
+                // Special case for _ID, which is a field we add ourselves.
+                if (BaseModel._ID.equals(field.getName()) && !object.has(BaseModel._ID)) {
+                    continue;
+                }
                 if (isInt(field)) {
                     field.setInt(instance, object.getInt(field.getName()));
                 } else if (isLong(field)) {
