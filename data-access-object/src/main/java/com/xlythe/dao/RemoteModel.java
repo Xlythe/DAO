@@ -154,7 +154,7 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
 
             final RequestParams requestParams = new RequestParams();
             for(Param param : getParams()) {
-                requestParams.add(param.getKey(), param.getValue());
+                requestParams.add(param.getKey(), param.getUnformattedValue().toString());
             }
 
             getServer(getContext()).get(mUrl, requestParams, new JsonHttpResponseHandler() {
