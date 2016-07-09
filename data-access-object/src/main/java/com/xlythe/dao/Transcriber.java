@@ -92,12 +92,11 @@ public class Transcriber {
                 } else if (isFloat(field)) {
                     field.setFloat(instance, Float.parseFloat(param.getValue()));
                 } else if (isBoolean(field)) {
-                    field.setBoolean(instance, Boolean.parseBoolean(param.getValue()));
+                    field.setBoolean(instance, Boolean.parseBoolean(param.getUnformattedValue().toString()));
                 } else if (isString(field)) {
-                    // It's a string! However, strings look like 'this', so chop off the quotes
-                    field.set(instance, param.getValue().substring(1, param.getValue().length() - 1));
+                    field.set(instance, param.getUnformattedValue());
                 } else if (isByteArray(field)) {
-                    field.set(instance, param.getValue().getBytes());
+                    field.set(instance, Base64.decode(param.getValue(), Base64.DEFAULT));
                 } else {
                     throw new UnsupportedClassVersionError(field.getType() + " is not supported");
                 }
@@ -117,6 +116,9 @@ public class Transcriber {
         ContentValues contentValues = new ContentValues();
         try {
             for (Field field : instance.getFields()) {
+                if (BaseModel.DEBUG) {
+                    Log.v(TAG, "getContentValues: " + field.getName());
+                }
                 if (isInt(field)) {
                     contentValues.put(field.getName(), field.getInt(instance));
                 } else if (isLong(field)) {
@@ -124,7 +126,7 @@ public class Transcriber {
                 } else if (isFloat(field)) {
                     contentValues.put(field.getName(), field.getFloat(instance));
                 } else if (isBoolean(field)) {
-                    contentValues.put(field.getName(), field.getBoolean(instance));
+                    contentValues.put(field.getName(), field.getBoolean(instance) ? 1 : 0);
                 } else if (isString(field)) {
                     contentValues.put(field.getName(), (String) field.get(instance));
                 } else if (isByteArray(field)) {

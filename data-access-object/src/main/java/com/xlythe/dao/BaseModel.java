@@ -34,14 +34,14 @@ import static com.xlythe.dao.Util.newInstance;
  */
 public abstract class BaseModel<T extends BaseModel> implements Serializable {
     private static final String TAG = BaseModel.class.getSimpleName();
-    private static final boolean DEBUG = false;
+    static final boolean DEBUG = false;
     static final String _ID = "_id";
 
     private transient Context mContext;
     private transient Field[] mFields;
     private transient ModelDataSource mDataSource;
 
-    private long _id;
+    long _id;
 
     public BaseModel(Context context) {
         setContext(context);
@@ -151,6 +151,17 @@ public abstract class BaseModel<T extends BaseModel> implements Serializable {
         return Util.retainDataOnUpgrade(getClass());
     }
 
+    public void dropTable() {
+        try {
+            mDataSource.open();
+            mDataSource.dropTable();
+        } catch (SQLException e) {
+            Log.e(TAG, "Failed to open data source", e);
+        } finally {
+            mDataSource.close();
+        }
+    }
+
     protected class ModelDataSource {
         // Database fields
         private SQLiteDatabase database;
@@ -256,7 +267,8 @@ public abstract class BaseModel<T extends BaseModel> implements Serializable {
             ContentValues values = getContentValues(instance);
             values.remove(_ID);
             if (DEBUG) Log.d(TAG, "Creating new entry values{" + values + "}");
-            database.insert(getTableName(), null, values);
+            long _id = database.insert(getTableName(), null, values);
+            instance._id = _id;
         }
 
         public void update(T instance) {
@@ -288,6 +300,10 @@ public abstract class BaseModel<T extends BaseModel> implements Serializable {
             String query = createQuery(params);
             if (DEBUG) Log.d(TAG, "Counting. query{" + query + "}");
             return DatabaseUtils.queryNumEntries(database, getTableName(), query);
+        }
+
+        public void dropTable() {
+            database.execSQL("DROP TABLE IF EXISTS " + getTableName() + ";");
         }
 
         public List<T> query(String orderBy, Param... params) {
@@ -330,12 +346,12 @@ public abstract class BaseModel<T extends BaseModel> implements Serializable {
         }
 
         private class ModelHelper extends SQLiteOpenHelper {
-            // Database creation sql statement
-            private final String DATABASE_CREATE;
-
             public ModelHelper(Context context, String databaseName) {
                 super(context, databaseName, null, getDatabaseVersion());
+            }
 
+            @Override
+            public void onCreate(SQLiteDatabase database) {
                 StringBuilder builder = new StringBuilder();
                 builder.append("create table if not exists ");
                 builder.append(getTableName());
@@ -354,12 +370,11 @@ public abstract class BaseModel<T extends BaseModel> implements Serializable {
                 }
 
                 builder.append(");");
-                DATABASE_CREATE = builder.toString();
-            }
-
-            @Override
-            public void onCreate(SQLiteDatabase database) {
-                database.execSQL(DATABASE_CREATE);
+                String createStatement = builder.toString();
+                if (DEBUG) {
+                    Log.v(TAG, "Creating table: " + createStatement);
+                }
+                database.execSQL(createStatement);
             }
 
             @Override
@@ -378,27 +393,7 @@ public abstract class BaseModel<T extends BaseModel> implements Serializable {
                         }
                     }
                 } else {
-                    // Drop all existing tables
-                    List<String> tablesToDrop = new LinkedList<>();
-                    Cursor cursor = database.rawQuery("SELECT name FROM sqlite_master WHERE type='table'", null);
-                    cursor.moveToFirst();
-                    while (!cursor.isAfterLast()) {
-                        String table = cursor.getString(0);
-                        cursor.moveToNext();
-                        if ("android_metadata".equals(table)) {
-                            continue;
-                        }
-                        if ("sqlite_sequence".equals(table)) {
-                            continue;
-                        }
-                        tablesToDrop.add(table);
-                    }
-                    for (String table : tablesToDrop) {
-                        String sql = "drop table if exists " + table;
-                        database.execSQL(sql);
-                    }
-
-                    // Recreate this table (other tables will be created as needed)
+                    dropTable();
                     onCreate(database);
                 }
             }
