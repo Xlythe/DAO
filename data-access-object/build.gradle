@@ -13,7 +13,7 @@ ext {
     siteUrl = 'https://github.com/Xlythe/DAO'
     gitUrl = 'https://github.com/Xlythe/DAO.git'
 
-    libraryVersion = '0.0.2'
+    libraryVersion = '0.0.3'
 
     developerId = 'xlythe'
     developerName = 'Will Harmon'
