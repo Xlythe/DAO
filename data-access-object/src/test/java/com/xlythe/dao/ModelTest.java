@@ -10,6 +10,8 @@ import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowLog;
 
+import java.nio.ByteBuffer;
+
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
 
@@ -41,6 +43,10 @@ public class ModelTest {
 
         new MockModel.Query(mContext).myLong(Long.MIN_VALUE).insert();
         assertEquals(1, new MockModel.Query(mContext).myLong(Long.MIN_VALUE).count());
+
+        new MockModel.Query(mContext).myLong(4).myByteArray(new byte[]{ 0, 0, 0, 1, 1, 1}).insert();
+        assertEquals(ByteBuffer.wrap(new byte[]{ 0, 0, 0, 1, 1, 1}),
+                ByteBuffer.wrap(new MockModel.Query(mContext).myLong(4).first().getMyByteArray()));
     }
 
     @Test

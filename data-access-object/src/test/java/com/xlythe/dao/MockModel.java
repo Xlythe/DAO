@@ -51,6 +51,11 @@ public class MockModel extends Model<MockModel> {
             return this;
         }
 
+        public MockModel.Query myByteArray(byte[] myByteArray) {
+            where(new Param("my_byte_array", myByteArray));
+            return this;
+        }
+
         public MockModel.Query orderByMyInt() {
             orderBy("my_int DESC");
             return this;
@@ -65,6 +70,7 @@ public class MockModel extends Model<MockModel> {
     private long my_long;
     private boolean my_bool;
     private int my_int;
+    private byte[] my_byte_array;
     private transient Object my_transient_object;
 
     public MockModel(Context context) {
@@ -103,5 +109,9 @@ public class MockModel extends Model<MockModel> {
 
     public boolean getMyBool() {
         return my_bool;
+    }
+
+    public byte[] getMyByteArray() {
+        return my_byte_array;
     }
 }
