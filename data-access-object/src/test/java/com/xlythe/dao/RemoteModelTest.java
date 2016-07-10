@@ -15,6 +15,7 @@ import java.util.List;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertTrue;
 
 @RunWith(RobolectricGradleTestRunner.class)
 @Config(sdk=23, shadows={}, constants = BuildConfig.class)
@@ -45,6 +46,7 @@ public class RemoteModelTest {
         assertEquals(null, result);
 
         // After we talk to the server, there should be a cache.
+        mMockServer.setResponse(200, "[{\"id\":1,\"title\":\"\",\"my_long\":0,\"my_bool\":\"false\",\"my_int\":0}]");
         new MockRemoteModel.Query(mContext).id(1).first(new RemoteModel.Callback<MockRemoteModel>() {
             @Override
             public void onSuccess(MockRemoteModel object) {
@@ -88,7 +90,11 @@ public class RemoteModelTest {
         new MockRemoteModel.Query(mContext).id(1).first(new RemoteModel.Callback<MockRemoteModel>() {
             @Override
             public void onSuccess(MockRemoteModel object) {
+                assertEquals(1, object.id);
                 assertEquals("Hello World", object.title);
+                assertEquals(1000, object.my_long);
+                assertEquals(true, object.my_bool);
+                assertEquals(1, object.my_int);
             }
 
             @Override
@@ -101,14 +107,17 @@ public class RemoteModelTest {
 
     @Test
     public void insert() {
-        // There should be nothing in the cache by default
-        MockRemoteModel result = new MockRemoteModel.Query(mContext).id(1).first();
-        assertEquals(null, result);
+        mMockServer.setResponse(201, "{\"id\":1,\"title\":\"\",\"my_long\":0,\"my_bool\":\"false\",\"my_int\":0}");
 
         // After we talk to the server, there should be a cache.
         new MockRemoteModel.Query(mContext).id(1).insert(new RemoteModel.Callback<MockRemoteModel>() {
             @Override
             public void onSuccess(MockRemoteModel object) {
+                assertEquals(1, object.id);
+                assertEquals("", object.title);
+                assertEquals(0, object.my_long);
+                assertEquals(false, object.my_bool);
+                assertEquals(0, object.my_int);
             }
 
             @Override
@@ -121,10 +130,17 @@ public class RemoteModelTest {
 
     @Test
     public void update() {
+        mMockServer.setResponse(201, "{\"id\":1,\"title\":\"\",\"my_long\":0,\"my_bool\":\"false\",\"my_int\":0}");
+
         MockRemoteModel model = new MockRemoteModel(mContext);
         model.save(new RemoteModel.Callback<MockRemoteModel>() {
             @Override
             public void onSuccess(MockRemoteModel object) {
+                assertEquals(1, object.id);
+                assertEquals("", object.title);
+                assertEquals(0, object.my_long);
+                assertEquals(false, object.my_bool);
+                assertEquals(0, object.my_int);
             }
 
             @Override
@@ -136,10 +152,13 @@ public class RemoteModelTest {
 
     @Test
     public void delete() {
+        mMockServer.setResponse(204, "Success");
+
         MockRemoteModel model = new MockRemoteModel(mContext);
         model.delete(new RemoteModel.Callback<Void>() {
             @Override
             public void onSuccess(Void object) {
+                assertTrue(true);
             }
 
             @Override
