@@ -44,12 +44,12 @@ public class MockRemoteModel extends RemoteModel<MockRemoteModel> {
     }
 
     @Unique
-    private int id;
-    private String title;
-    private long my_long;
-    private boolean my_bool;
-    private int my_int;
-    private byte[] my_byte_array;
+    int id;
+    String title;
+    long my_long;
+    boolean my_bool;
+    int my_int;
+    byte[] my_byte_array;
 
     public MockRemoteModel(Context context) {
         super(context);

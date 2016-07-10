@@ -62,14 +62,14 @@ public class RemoteModelTest {
 
     @Test
     public void get() {
-        // There should be nothing in the cache by default
-        MockRemoteModel result = new MockRemoteModel.Query(mContext).id(1).first();
-        assertEquals(null, result);
+        mMockServer.setResponse(200, "[{\"id\":1,\"title\":\"Hello World\",\"my_long\":1000,\"my_bool\":\"true\",\"my_int\":1}]");
 
         // After we talk to the server, there should be a cache.
         new MockRemoteModel.Query(mContext).id(1).all(new RemoteModel.Callback<List<MockRemoteModel>>() {
             @Override
             public void onSuccess(List<MockRemoteModel> object) {
+                assertEquals(1, object.size());
+                assertEquals("Hello World", object.get(0).title);
             }
 
             @Override
@@ -82,14 +82,13 @@ public class RemoteModelTest {
 
     @Test
     public void getFirst() {
-        // There should be nothing in the cache by default
-        MockRemoteModel result = new MockRemoteModel.Query(mContext).id(1).first();
-        assertEquals(null, result);
+        mMockServer.setResponse(200, "[{\"id\":1,\"title\":\"Hello World\",\"my_long\":1000,\"my_bool\":\"true\",\"my_int\":1}]");
 
         // After we talk to the server, there should be a cache.
         new MockRemoteModel.Query(mContext).id(1).first(new RemoteModel.Callback<MockRemoteModel>() {
             @Override
             public void onSuccess(MockRemoteModel object) {
+                assertEquals("Hello World", object.title);
             }
 
             @Override
