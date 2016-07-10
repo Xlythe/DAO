@@ -56,8 +56,13 @@ public class MockModel extends Model<MockModel> {
             return this;
         }
 
-        public MockModel.Query orderByMyInt() {
+        public MockModel.Query orderByMyIntDesc() {
             orderBy("my_int DESC");
+            return this;
+        }
+
+        public MockModel.Query orderByMyIntAsc() {
+            orderBy("my_int ASC");
             return this;
         }
 

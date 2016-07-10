@@ -60,6 +60,16 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
         final Handler handler = new Handler();
         getServer(getContext()).post(mUrl, Transcriber.getJSONObject((T) this).toString(), new JsonHttpResponseHandler() {
             @Override
+            public void onSuccess(int statusCode, Header[] headers, String responseString) {
+                try {
+                    onSuccess(statusCode, headers, new JSONObject(responseString));
+                } catch (JSONException | NullPointerException e) {
+                    Log.e(TAG, "Failed to parse " + responseString, e);
+                    onFailure(statusCode, headers, responseString, e);
+                }
+            }
+
+            @Override
             public void onSuccess(int statusCode, Header[] headers, final JSONObject response) {
                 handler.post(new Runnable() {
                     @Override
@@ -97,6 +107,11 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
 
         final Handler handler = new Handler();
         getServer(getContext()).delete(mUrl + "/" + getUniqueKey(), new JsonHttpResponseHandler() {
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, String responseString) {
+                onSuccess(statusCode, headers, (JSONObject) null);
+            }
+
             @Override
             public void onSuccess(int statusCode, Header[] headers, final JSONObject response) {
                 handler.post(new Runnable() {
@@ -159,6 +174,16 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
 
             getServer(getContext()).get(mUrl, requestParams, new JsonHttpResponseHandler() {
                 @Override
+                public void onSuccess(int statusCode, Header[] headers, String responseString) {
+                    try {
+                        onSuccess(statusCode, headers, new JSONArray(responseString));
+                    } catch (JSONException | NullPointerException e) {
+                        Log.e(TAG, "Failed to parse " + responseString, e);
+                        onFailure(statusCode, headers, responseString, e);
+                    }
+                }
+
+                @Override
                 public void onSuccess(int statusCode, Header[] headers, final JSONArray response) {
                     mHandler.post(new Runnable() {
                         @Override
@@ -197,6 +222,7 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
 
                 @Override
                 public void onFailure(int statusCode, Header[] headers, String responseString, final Throwable throwable) {
+                    Log.d(TAG, "lalala");
                     mHandler.post(new Runnable() {
                         @Override
                         public void run() {
@@ -253,6 +279,16 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
             }
 
             getServer(getContext()).post(mUrl, Transcriber.getJSONObject(cache).toString(), new JsonHttpResponseHandler() {
+                @Override
+                public void onSuccess(int statusCode, Header[] headers, String responseString) {
+                    try {
+                        onSuccess(statusCode, headers, new JSONObject(responseString));
+                    } catch (JSONException | NullPointerException e) {
+                        Log.e(TAG, "Failed to parse " + responseString, e);
+                        onFailure(statusCode, headers, responseString, e);
+                    }
+                }
+
                 @Override
                 public void onSuccess(int statusCode, Header[] headers, final JSONObject response) {
                     mHandler.post(new Runnable() {
@@ -313,26 +349,34 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
 
         @Override
         public void get(String url, RequestParams params, JsonHttpResponseHandler responseHandler) {
-            Log.d(TAG, "get="+url+", params="+params);
+            if (DEBUG) {
+                Log.d(TAG, "get="+url+", params="+params);
+            }
             mClient.get(url, params, responseHandler);
         }
 
         @Override
         public void post(String url, String json, JsonHttpResponseHandler responseHandler) {
-            Log.d(TAG, "post=" + url + ", json=" + json);
+            if (DEBUG) {
+                Log.d(TAG, "post=" + url + ", json=" + json);
+            }
             ByteArrayEntity entity = new ByteArrayEntity(json.getBytes());
             mClient.post(mContext, url, entity, "application/json", responseHandler);
         }
 
         @Override
         public void put(String url, RequestParams params, JsonHttpResponseHandler responseHandler) {
-            Log.d(TAG, "put="+url+", params="+params);
+            if (DEBUG) {
+                Log.d(TAG, "put="+url+", params="+params);
+            }
             mClient.put(url, params, responseHandler);
         }
 
         @Override
         public void delete(String url, JsonHttpResponseHandler responseHandler) {
-            Log.d(TAG, "delete="+url);
+            if (DEBUG) {
+                Log.d(TAG, "delete="+url);
+            }
             mClient.delete(url, responseHandler);
         }
     };

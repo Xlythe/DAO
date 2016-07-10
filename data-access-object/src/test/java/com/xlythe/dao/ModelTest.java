@@ -11,9 +11,9 @@ import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowLog;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 
 import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertFalse;
 
 @RunWith(RobolectricGradleTestRunner.class)
 @Config(sdk=23, shadows={}, constants = BuildConfig.class)
@@ -25,6 +25,25 @@ public class ModelTest {
         ShadowLog.stream = System.out;
         mContext = RuntimeEnvironment.application;
         new MockModel(mContext).dropTable();
+    }
+
+    @Test
+    public void orderBy() {
+        new MockModel.Query(mContext).myInt(1).insert();
+        new MockModel.Query(mContext).myInt(2).insert();
+        new MockModel.Query(mContext).myInt(3).insert();
+        new MockModel.Query(mContext).myInt(4).insert();
+        new MockModel.Query(mContext).myInt(5).insert();
+
+        List<MockModel> results = new MockModel.Query(mContext).orderByMyIntAsc().all();
+        for (int i = 0; i < 5; i++) {
+            assertEquals(i + 1, results.get(i).getMyInt());
+        }
+
+        results = new MockModel.Query(mContext).orderByMyIntDesc().all();
+        for (int i = 0; i < 5; i++) {
+            assertEquals(5 - i, results.get(i).getMyInt());
+        }
     }
 
     @Test

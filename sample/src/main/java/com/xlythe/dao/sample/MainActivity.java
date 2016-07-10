@@ -11,13 +11,18 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.xlythe.dao.Model;
+import com.xlythe.dao.RemoteModel;
 import com.xlythe.dao.sample.model.Note;
+import com.xlythe.dao.sample.model.User;
+
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements Model.Observer {
 
@@ -33,6 +38,20 @@ public class MainActivity extends AppCompatActivity implements Model.Observer {
 
         RecyclerView list = (RecyclerView) findViewById(R.id.list);
         list.setLayoutManager(new LinearLayoutManager(this));
+
+        Log.d("TEST", "Looking up users");
+        new User.Query(this).username("xlythe").all(new RemoteModel.Callback<List<User>>() {
+            @Override
+            public void onSuccess(List<User> object) {
+                Log.d("TEST", "Success");
+                Log.d("TEST", object.toString());
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+                Log.d("TEST", "Failure");
+            }
+        });
 
         mNoteAdapter = new NoteAdapter(this);
         list.setAdapter(mNoteAdapter);
