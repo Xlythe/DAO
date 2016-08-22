@@ -10,4 +10,6 @@ import java.lang.annotation.Target;
 public @interface Database {
     int version() default 1;
     boolean retainDataOnUpgrade() default false;
+    String tableName() default "";
+    String name() default "";
 }

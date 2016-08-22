@@ -230,11 +230,11 @@ public abstract class BaseModel<T extends BaseModel> implements Serializable {
         }
 
         public String getDbName() {
-            return getModelClass().getName() + ".db";
+            return Util.getDatabaseName(getModelClass());
         }
 
         public String getTableName() {
-            return getModelClass().getSimpleName();
+            return Util.getTableName(getModelClass());
         }
 
         private String getType(Field field) {

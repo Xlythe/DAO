@@ -53,6 +53,28 @@ public class Util {
         return false;
     }
 
+    static String getTableName(Class clazz) {
+        if (clazz.isAnnotationPresent(Database.class)) {
+            Database annotation = (Database) clazz.getAnnotation(Database.class);
+            String tableName = annotation.tableName();
+            if (tableName != null && !tableName.isEmpty()) {
+                return tableName;
+            }
+        }
+        return clazz.getSimpleName();
+    }
+
+    static String getDatabaseName(Class clazz) {
+        if (clazz.isAnnotationPresent(Database.class)) {
+            Database annotation = (Database) clazz.getAnnotation(Database.class);
+            String databaseName = annotation.name();
+            if (databaseName != null && !databaseName.isEmpty()) {
+                return databaseName + ".db";
+            }
+        }
+        return clazz.getName() + ".db";
+    }
+
     static <B extends BaseModel> B newInstance(Class<B> clazz, Context context) {
         try {
             return clazz.getDeclaredConstructor(Context.class).newInstance(context);
