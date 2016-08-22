@@ -223,7 +223,6 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
 
                 @Override
                 public void onFailure(int statusCode, Header[] headers, String responseString, final Throwable throwable) {
-                    Log.d(TAG, "lalala");
                     mHandler.post(new Runnable() {
                         @Override
                         public void run() {
