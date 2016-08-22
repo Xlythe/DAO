@@ -6,6 +6,7 @@ import android.util.Log;
 
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.JsonHttpResponseHandler;
+import com.loopj.android.http.PersistentCookieStore;
 import com.loopj.android.http.RequestParams;
 
 import org.apache.http.Header;
@@ -345,6 +346,7 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
 
         DefaultServer(Context context) {
             mContext = context.getApplicationContext();
+            mClient.setCookieStore(new PersistentCookieStore(mContext));
         }
 
         @Override
