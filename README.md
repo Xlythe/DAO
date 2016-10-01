@@ -23,7 +23,7 @@ public class Note extends Model<Note> {
 }
 ```
 
-Inside the model, we list out all the variables we wish to persist. The supported types are String, int, boolean, long, float, or byte[]. If you have a variable that you don't want persisted, mark it as a transient variable. While not required, you can annotate your variables with @Unique. If you do, they will act as a key when saving the DAO.
+Inside the model, list out all the variables you wish to persist. The supported types are String, int, boolean, long, float, or byte[]. If you have a variable that you don't want persisted, mark it as a transient variable. While not required, you can annotate your variables with @Unique. If you do, they will act as a key when saving the DAO.
 
 ```java
 // The note's title
@@ -157,7 +157,7 @@ List<Note> cache = new Note.Query(getContext()).url("https://your.website.here/n
 });
 ```
 
-The default implementation will call the url with no cookies, but will use the same parameters provided (?title=Hello%20World in the above example). To get more control over the connection, call RemoteModel.setServer().
+To get more control over the connection, call RemoteModel.setServer().
 
 ```java
 RemoteModel.setServer(new Server() {
