@@ -47,6 +47,10 @@ public abstract class BaseModel<T extends BaseModel> implements Serializable {
         setContext(context);
     }
 
+    public long get_Id() {
+        return _id;
+    }
+
     public void setContext(Context context) {
         mContext = context;
 

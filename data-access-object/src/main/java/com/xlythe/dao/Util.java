@@ -89,4 +89,8 @@ public class Util {
         }
         throw new RuntimeException("Your model (" + clazz.getSimpleName() + ") must have a constructor that takes a Context");
     }
+
+    public static <T extends Model<T>> void dropTable(Context context, Class<T> clazz) {
+        newInstance(clazz, context).dropTable();
+    }
 }

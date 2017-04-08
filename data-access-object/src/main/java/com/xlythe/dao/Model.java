@@ -25,7 +25,7 @@ public abstract class Model<T extends Model> extends BaseModel<T> {
     private static final Map<Class<? extends Model>, Set<Observer>> OBSERVERS = new HashMap<>();
 
     protected static void registerObserver(Class<? extends Model> clazz, Observer observer) {
-        Log.d(TAG, "Registering observer for " + clazz);
+        if (DEBUG) Log.d(TAG, "Registering observer for " + clazz);
         Set<Observer> set = OBSERVERS.get(clazz);
         if (set == null) {
             set = new HashSet<>();
@@ -35,7 +35,7 @@ public abstract class Model<T extends Model> extends BaseModel<T> {
     }
 
     protected static void unregisterObserver(Class<? extends Model> clazz, Observer observer) {
-        Log.d(TAG, "Unregistering observer for " + clazz);
+        if (DEBUG) Log.d(TAG, "Unregistering observer for " + clazz);
         Set<Observer> set = OBSERVERS.get(clazz);
         if (set != null) {
             set.remove(observer);
@@ -73,13 +73,13 @@ public abstract class Model<T extends Model> extends BaseModel<T> {
     }
 
     private void notifyDataSetChanged() {
-        Log.d(TAG, "Notifying observers for " + getModelClass());
+        if (DEBUG) Log.d(TAG, "Notifying observers for " + getModelClass());
         if (OBSERVERS.containsKey(getModelClass())) {
             for (Observer observer : OBSERVERS.get(getModelClass())) {
                 observer.onChange();
             }
         } else {
-            Log.d(TAG, "No observers found");
+            if (DEBUG) Log.d(TAG, "No observers found");
         }
     }
 
