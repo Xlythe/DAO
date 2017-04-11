@@ -26,17 +26,17 @@ import static com.xlythe.dao.Util.newInstance;
  * All classes that extend Model must have a constructor that takes a context (and nothing else).
  */
 public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
-    private static transient Server SERVER;
+    private static transient Server sServer;
 
     private static Server getServer(Context context) {
-        if (SERVER == null) {
-            SERVER = new DefaultServer(context);
+        if (sServer == null) {
+            sServer = new DefaultServer(context);
         }
-        return SERVER;
+        return sServer;
     }
 
     public static void setServer(Server server) {
-        SERVER = server;
+        sServer = server;
     }
 
     private String mUrl;
@@ -150,11 +150,12 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
             super(clazz, context);
         }
 
-        public Query url(String url) {
+        public Query<Q> url(String url) {
             mUrl = url;
             return this;
         }
 
+        @Override
         public List<Q> all() {
             return all(null);
         }
@@ -236,6 +237,7 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
             return cache;
         }
 
+        @Override
         public Q first() {
             return first(null);
         }
@@ -265,6 +267,7 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
             return cache;
         }
 
+        @Override
         public Q insert() {
             return insert(null);
         }
