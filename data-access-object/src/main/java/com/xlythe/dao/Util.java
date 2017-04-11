@@ -37,7 +37,7 @@ public class Util {
         return field.getAnnotation(Unique.class) != null;
     }
 
-    static int getDatabaseVersion(Class clazz) {
+    static int getDatabaseVersion(Class<?> clazz) {
         if (clazz.isAnnotationPresent(Database.class)) {
             Database annotation = (Database) clazz.getAnnotation(Database.class);
             return annotation.version();
@@ -45,7 +45,7 @@ public class Util {
         return 1;
     }
 
-    static boolean retainDataOnUpgrade(Class clazz) {
+    static boolean retainDataOnUpgrade(Class<?> clazz) {
         if (clazz.isAnnotationPresent(Database.class)) {
             Database annotation = (Database) clazz.getAnnotation(Database.class);
             return annotation.retainDataOnUpgrade();
@@ -53,7 +53,7 @@ public class Util {
         return false;
     }
 
-    static String getTableName(Class clazz) {
+    static String getTableName(Class<?> clazz) {
         if (clazz.isAnnotationPresent(Database.class)) {
             Database annotation = (Database) clazz.getAnnotation(Database.class);
             String tableName = annotation.tableName();
@@ -64,7 +64,7 @@ public class Util {
         return clazz.getSimpleName();
     }
 
-    static String getDatabaseName(Class clazz) {
+    static String getDatabaseName(Class<?> clazz) {
         if (clazz.isAnnotationPresent(Database.class)) {
             Database annotation = (Database) clazz.getAnnotation(Database.class);
             String databaseName = annotation.name();
