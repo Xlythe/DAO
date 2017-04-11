@@ -142,7 +142,7 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
         });
     }
 
-    protected static class Query<Q extends RemoteModel> extends Model.Query<Q> {
+    protected static class Query<Q extends RemoteModel<Q>> extends Model.Query<Q> {
         private String mUrl;
         private Handler mHandler = new Handler();
 
