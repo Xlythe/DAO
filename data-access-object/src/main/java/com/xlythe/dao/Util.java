@@ -75,7 +75,7 @@ public class Util {
         return clazz.getName() + ".db";
     }
 
-    static <B extends BaseModel> B newInstance(Class<B> clazz, Context context) {
+    static <B extends BaseModel<B>> B newInstance(Class<B> clazz, Context context) {
         try {
             return clazz.getDeclaredConstructor(Context.class).newInstance(context);
         } catch (NoSuchMethodException e) {
