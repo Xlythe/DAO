@@ -83,7 +83,7 @@ public abstract class Model<T extends Model> extends BaseModel<T> {
         }
     }
 
-    protected static class Query<Q extends Model> {
+    protected static class Query<Q extends Model<Q>> {
         private final Class<Q> mClass;
         private final Context mContext;
         private final ArrayList<Param> mParams = new ArrayList<>();
