@@ -22,9 +22,9 @@ import static com.xlythe.dao.Util.newInstance;
 public abstract class Model<T extends Model> extends BaseModel<T> {
     static final String TAG = Model.class.getSimpleName();
 
-    private static final Map<Class<? extends Model>, Set<Observer>> OBSERVERS = new HashMap<>();
+    private static final Map<Class<? extends Model<?>>, Set<Observer>> OBSERVERS = new HashMap<>();
 
-    protected static void registerObserver(Class<? extends Model> clazz, Observer observer) {
+    protected static void registerObserver(Class<? extends Model<?>> clazz, Observer observer) {
         if (DEBUG) Log.d(TAG, "Registering observer for " + clazz);
         Set<Observer> set = OBSERVERS.get(clazz);
         if (set == null) {
@@ -34,7 +34,7 @@ public abstract class Model<T extends Model> extends BaseModel<T> {
         set.add(observer);
     }
 
-    protected static void unregisterObserver(Class<? extends Model> clazz, Observer observer) {
+    protected static void unregisterObserver(Class<? extends Model<?>> clazz, Observer observer) {
         if (DEBUG) Log.d(TAG, "Unregistering observer for " + clazz);
         Set<Observer> set = OBSERVERS.get(clazz);
         if (set != null) {
@@ -94,17 +94,17 @@ public abstract class Model<T extends Model> extends BaseModel<T> {
             mContext = context;
         }
 
-        public Query where(String key, Object value) {
+        public Query<Q> where(String key, Object value) {
             mParams.add(new Param(key, value));
             return this;
         }
 
-        public Query where(Param... params) {
+        public Query<Q> where(Param... params) {
             mParams.addAll(Arrays.asList(params));
             return this;
         }
 
-        public Query orderBy(String order) {
+        public Query<Q> orderBy(String order) {
             mOrderBy = order;
             return this;
         }
