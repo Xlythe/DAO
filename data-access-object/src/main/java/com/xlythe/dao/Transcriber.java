@@ -10,7 +10,12 @@ import org.json.JSONObject;
 
 import java.lang.reflect.Field;
 
-import static com.xlythe.dao.Util.*;
+import static com.xlythe.dao.Util.isBoolean;
+import static com.xlythe.dao.Util.isByteArray;
+import static com.xlythe.dao.Util.isFloat;
+import static com.xlythe.dao.Util.isInt;
+import static com.xlythe.dao.Util.isLong;
+import static com.xlythe.dao.Util.isString;
 import static com.xlythe.dao.Model.TAG;
 
 public class Transcriber {
