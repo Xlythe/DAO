@@ -49,6 +49,11 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
         mUrl = url;
     }
 
+    @SuppressWarnings("unchecked")
+    private T getModel() {
+        return (T) this;
+    }
+
     protected void save(final Callback<T> callback) {
         if (mUrl == null) {
             throw new IllegalStateException("No url set");
@@ -59,7 +64,7 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
         }
 
         final Handler handler = new Handler();
-        getServer(getContext()).post(mUrl, Transcriber.getJSONObject((T) this).toString(), new JsonHttpResponseHandler() {
+        getServer(getContext()).post(mUrl, Transcriber.getJSONObject(getModel()).toString(), new JsonHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, String responseString) {
                 try {
@@ -75,7 +80,7 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
-                        final T model = (T) RemoteModel.this;
+                        final T model = getModel();
                         // Add all the items from the server to the local cache db
                         Transcriber.inflate(model, response);
                         model.save();
@@ -118,7 +123,7 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
-                        final T model = (T) RemoteModel.this;
+                        final T model = getModel();
                         try {
                             model.delete();
                         } catch (Exception e) {
