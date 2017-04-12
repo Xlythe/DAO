@@ -143,6 +143,7 @@ public abstract class BaseModel<T extends BaseModel> implements Serializable {
         return field;
     }
     
+    @SuppressWarnings("unchecked")
     Class<T> getModelClass() {
         return (Class<T>) getClass();
     }
