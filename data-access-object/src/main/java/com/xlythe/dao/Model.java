@@ -48,7 +48,7 @@ public abstract class Model<T extends Model> extends BaseModel<T> {
 
     public Model(Context context, Cursor cursor) {
         super(context);
-        Transcriber.inflate(this, cursor);
+        Transcriber.inflate((T) this, cursor);
     }
 
     void create() {
