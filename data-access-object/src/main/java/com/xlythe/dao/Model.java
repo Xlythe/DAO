@@ -48,26 +48,31 @@ public abstract class Model<T extends Model> extends BaseModel<T> {
 
     public Model(Context context, Cursor cursor) {
         super(context);
-        Transcriber.inflate((T) this, cursor);
+        Transcriber.inflate(getModel(), cursor);
+    }
+
+    @SuppressWarnings("unchecked")
+    private T getModel() {
+        return (T) this;
     }
 
     void create() {
         open();
-        getDataSource().create((T) this);
+        getDataSource().create(getModel());
         notifyDataSetChanged();
         close();
     }
 
     protected void save() {
         open();
-        getDataSource().save((T) this);
+        getDataSource().save(getModel());
         notifyDataSetChanged();
         close();
     }
 
     protected void delete() {
         open();
-        getDataSource().delete((T) this);
+        getDataSource().delete(getModel());
         notifyDataSetChanged();
         close();
     }
