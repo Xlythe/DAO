@@ -18,7 +18,7 @@ public class Transcriber {
     /**
      * Updates the values of the instance with the cursor's current position
      */
-    static <B extends BaseModel> BaseModel<B> inflate(BaseModel<B> instance, Cursor cursor) {
+    static <A extends BaseModel<A>> A inflate(A instance, Cursor cursor) {
         try {
             for (Field field : instance.getFields()) {
                 if (isInt(field)) {
