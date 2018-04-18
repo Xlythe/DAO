@@ -1,6 +1,7 @@
 package com.xlythe.dao.sample;
 
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Log;
@@ -20,12 +21,12 @@ public class DetailActivity extends AppCompatActivity {
     private EditText mBodyView;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detail);
 
-        mTitleView = (EditText) findViewById(R.id.title);
-        mBodyView = (EditText) findViewById(R.id.body);
+        mTitleView = findViewById(R.id.title);
+        mBodyView = findViewById(R.id.body);
 
         if (getIntent().hasExtra(EXTRA_NOTE)) {
             mNote = (Note) getIntent().getSerializableExtra(EXTRA_NOTE);

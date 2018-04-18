@@ -1,9 +1,10 @@
 package com.xlythe.dao.sample;
 
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.util.Pair;
 import android.support.v7.app.AlertDialog;
@@ -24,14 +25,14 @@ public class MainActivity extends AppCompatActivity implements Model.Observer {
     private NoteAdapter mNoteAdapter;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        RecyclerView list = (RecyclerView) findViewById(R.id.list);
+        RecyclerView list = findViewById(R.id.list);
         list.setLayoutManager(new LinearLayoutManager(this));
 
         mNoteAdapter = new NoteAdapter(this);
@@ -47,12 +48,7 @@ public class MainActivity extends AppCompatActivity implements Model.Observer {
                 new AlertDialog.Builder(MainActivity.this)
                         .setTitle(note.getTitle())
                         .setMessage(note.getBody())
-                        .setPositiveButton(R.string.action_delete, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                note.delete();
-                            }
-                        })
+                        .setPositiveButton(R.string.action_delete, (dialog, which) -> note.delete())
                         .show();
             }
         });
@@ -97,31 +93,31 @@ public class MainActivity extends AppCompatActivity implements Model.Observer {
     }
 
     public static class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.ViewHolder> {
-        public static class ViewHolder extends RecyclerView.ViewHolder {
+        static class ViewHolder extends RecyclerView.ViewHolder {
             private final View mRoot;
             private final TextView mTitleView;
             private final TextView mBodyView;
 
             private Note mNote;
 
-            public ViewHolder(View view) {
+            ViewHolder(View view) {
                 super(view);
                 mRoot = view;
                 mTitleView = (TextView) view.findViewById(R.id.title);
                 mBodyView = (TextView) view.findViewById(R.id.body);
             }
 
-            public void setNote(Note note) {
+            void setNote(Note note) {
                 mNote = note;
                 mTitleView.setText(note.getTitle());
                 mBodyView.setText(note.getBody());
             }
 
-            public Note getNote() {
+            Note getNote() {
                 return mNote;
             }
 
-            public void setOnClickListener(final OnClickListener listener) {
+            void setOnClickListener(final OnClickListener listener) {
                 if (listener == null) {
                     mRoot.setOnClickListener(null);
                     return;
@@ -152,11 +148,11 @@ public class MainActivity extends AppCompatActivity implements Model.Observer {
         private Note.Cursor mCursor;
         private OnClickListener mOnClickListener;
 
-        public NoteAdapter(Context context) {
+        NoteAdapter(Context context) {
             mContext = context;
         }
 
-        public void setCursor(Note.Cursor cursor) {
+        void setCursor(Note.Cursor cursor) {
             if (mCursor != null) {
                 mCursor.close();
             }
@@ -165,21 +161,22 @@ public class MainActivity extends AppCompatActivity implements Model.Observer {
             notifyDataSetChanged();
         }
 
-        public Note.Cursor getCursor() {
+        Note.Cursor getCursor() {
             return mCursor;
         }
 
-        public void setOnClickListener(OnClickListener listener) {
+        void setOnClickListener(OnClickListener listener) {
             mOnClickListener = listener;
         }
 
+        @NonNull
         @Override
-        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             return new ViewHolder(LayoutInflater.from(mContext).inflate(R.layout.list_item_note, parent, false));
         }
 
         @Override
-        public void onBindViewHolder(ViewHolder holder, int position) {
+        public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             mCursor.moveToPosition(position);
             holder.setNote(mCursor.getNote());
             holder.setOnClickListener(mOnClickListener);
@@ -190,7 +187,7 @@ public class MainActivity extends AppCompatActivity implements Model.Observer {
             return mCursor.getCount();
         }
 
-        public void close() {
+        void close() {
             mCursor.close();
         }
     }

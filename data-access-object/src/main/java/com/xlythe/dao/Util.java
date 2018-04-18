@@ -55,9 +55,9 @@ public class Util {
 
     static String getTableName(Class<?> clazz) {
         if (clazz.isAnnotationPresent(Database.class)) {
-            Database annotation = (Database) clazz.getAnnotation(Database.class);
+            Database annotation = clazz.getAnnotation(Database.class);
             String tableName = annotation.tableName();
-            if (tableName != null && !tableName.isEmpty()) {
+            if (!tableName.isEmpty()) {
                 return tableName;
             }
         }
@@ -66,9 +66,9 @@ public class Util {
 
     static String getDatabaseName(Class<?> clazz) {
         if (clazz.isAnnotationPresent(Database.class)) {
-            Database annotation = (Database) clazz.getAnnotation(Database.class);
+            Database annotation = clazz.getAnnotation(Database.class);
             String databaseName = annotation.name();
-            if (databaseName != null && !databaseName.isEmpty()) {
+            if (!databaseName.isEmpty()) {
                 return databaseName + ".db";
             }
         }

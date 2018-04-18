@@ -316,7 +316,9 @@ public abstract class BaseModel<T extends BaseModel> implements Serializable {
             Cursor cursor = database.query(getTableName(), getColumns(), createQuery(params), null, null, null, orderBy);
             cursor.moveToFirst();
             while (!cursor.isAfterLast()) {
-                list.add((T) inflate(newInstance(getModelClass(), mContext), cursor));
+                T newInstance = (T) newInstance(getModelClass(), mContext);
+                inflate(newInstance, cursor);
+                list.add(newInstance);
                 cursor.moveToNext();
             }
             cursor.close();
@@ -328,7 +330,8 @@ public abstract class BaseModel<T extends BaseModel> implements Serializable {
             Cursor cursor = database.query(getTableName(), getColumns(), createQuery(params), null, null, null, orderBy);
             cursor.moveToFirst();
             if (!cursor.isAfterLast()) {
-                instance = (T) inflate(newInstance(getModelClass(), mContext), cursor);
+                instance = (T) newInstance(getModelClass(), mContext);
+                inflate(instance, cursor);
             }
             cursor.close();
             return instance;
@@ -343,7 +346,9 @@ public abstract class BaseModel<T extends BaseModel> implements Serializable {
             Cursor cursor = database.query(getTableName(), getColumns(), null, null, null, null, null);
             cursor.moveToFirst();
             while (!cursor.isAfterLast()) {
-                list.add((T) inflate(newInstance(getModelClass(), mContext), cursor));
+                T newInstance = (T) newInstance(getModelClass(), mContext);
+                inflate(newInstance, cursor);
+                list.add(newInstance);
                 cursor.moveToNext();
             }
             cursor.close();

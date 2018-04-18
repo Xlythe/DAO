@@ -77,26 +77,20 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
 
             @Override
             public void onSuccess(int statusCode, Header[] headers, final JSONObject response) {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        final T model = getModel();
-                        // Add all the items from the server to the local cache db
-                        Transcriber.inflate(model, response);
-                        model.save();
-                        callback.onSuccess(model);
-                    }
+                handler.post(() -> {
+                    final T model = getModel();
+                    // Add all the items from the server to the local cache db
+                    Transcriber.inflate(model, response);
+                    model.save();
+                    callback.onSuccess(model);
                 });
             }
 
             @Override
             public void onFailure(int statusCode, Header[] headers, String responseString, final Throwable throwable) {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Log.e(TAG, "Failed: ", throwable);
-                        callback.onFailure(throwable);
-                    }
+                handler.post(() -> {
+                    Log.e(TAG, "Failed: ", throwable);
+                    callback.onFailure(throwable);
                 });
             }
         });
@@ -120,28 +114,22 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
 
             @Override
             public void onSuccess(int statusCode, Header[] headers, final JSONObject response) {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        final T model = getModel();
-                        try {
-                            model.delete();
-                        } catch (Exception e) {
-                            Log.e(TAG, "Failed to delete cache", e);
-                        }
-                        callback.onSuccess(null);
+                handler.post(() -> {
+                    final T model = getModel();
+                    try {
+                        model.delete();
+                    } catch (Exception e) {
+                        Log.e(TAG, "Failed to delete cache", e);
                     }
+                    callback.onSuccess(null);
                 });
             }
 
             @Override
             public void onFailure(int statusCode, Header[] headers, String responseString, final Throwable throwable) {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Log.e(TAG, "Failed: ", throwable);
-                        callback.onFailure(throwable);
-                    }
+                handler.post(() -> {
+                    Log.e(TAG, "Failed: ", throwable);
+                    callback.onFailure(throwable);
                 });
             }
         });
@@ -192,49 +180,43 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
 
                 @Override
                 public void onSuccess(int statusCode, Header[] headers, final JSONArray response) {
-                    mHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            final Q model = newInstance(getModelClass(), getContext());
-                            try {
-                                model.open();
-                                // Add all the items from the server to the local cache db
-                                List<Q> list = new ArrayList<Q>(response.length());
-                                for (int i = 0; i < response.length(); i++) {
-                                    Q instance = (Q) Transcriber.inflate(newInstance(getModelClass(), getContext()), response.getJSONObject(i));
-                                    list.add(instance);
-                                    model.getDataSource().save(instance);
-                                }
-
-                                // Clean up any items in the cache that didn't exist on the server
-                                Log.d(TAG, "Checking cache for any old variables");
-                                for (Q instance : cache) {
-                                    if (!list.contains(instance)) {
-                                        Log.d(TAG, "Deleting instance");
-                                        instance.delete();
-                                    }
-                                }
-
-                                // Give the callback the new data
-                                callback.onSuccess(list);
-                            } catch (JSONException e) {
-                                Log.e(TAG, "Exception parsing fields from JSON Object", e);
-                                callback.onFailure(e);
-                            } finally {
-                                model.close();
+                    mHandler.post(() -> {
+                        final Q model = newInstance(getModelClass(), getContext());
+                        try {
+                            model.open();
+                            // Add all the items from the server to the local cache db
+                            List<Q> list = new ArrayList<Q>(response.length());
+                            for (int i = 0; i < response.length(); i++) {
+                                Q instance = (Q) Transcriber.inflate(newInstance(getModelClass(), getContext()), response.getJSONObject(i));
+                                list.add(instance);
+                                model.getDataSource().save(instance);
                             }
+
+                            // Clean up any items in the cache that didn't exist on the server
+                            Log.d(TAG, "Checking cache for any old variables");
+                            for (Q instance : cache) {
+                                if (!list.contains(instance)) {
+                                    Log.d(TAG, "Deleting instance");
+                                    instance.delete();
+                                }
+                            }
+
+                            // Give the callback the new data
+                            callback.onSuccess(list);
+                        } catch (JSONException e) {
+                            Log.e(TAG, "Exception parsing fields from JSON Object", e);
+                            callback.onFailure(e);
+                        } finally {
+                            model.close();
                         }
                     });
                 }
 
                 @Override
                 public void onFailure(int statusCode, Header[] headers, String responseString, final Throwable throwable) {
-                    mHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Log.e(TAG, "Failed: ", throwable);
-                            callback.onFailure(throwable);
-                        }
+                    mHandler.post(() -> {
+                        Log.e(TAG, "Failed: ", throwable);
+                        callback.onFailure(throwable);
                     });
                 }
             });
@@ -299,34 +281,28 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
 
                 @Override
                 public void onSuccess(int statusCode, Header[] headers, final JSONObject response) {
-                    mHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            final Q model = newInstance(getModelClass(), getContext());
-                            try {
-                                model.open();
+                    mHandler.post(() -> {
+                        final Q model = newInstance(getModelClass(), getContext());
+                        try {
+                            model.open();
 
-                                // Add all the items from the server to the local cache db
-                                Q instance = (Q) Transcriber.inflate(newInstance(getModelClass(), getContext()), response);
-                                model.getDataSource().save(instance);
+                            // Add all the items from the server to the local cache db
+                            Q instance = (Q) Transcriber.inflate(newInstance(getModelClass(), getContext()), response);
+                            model.getDataSource().save(instance);
 
-                                // Give the callback the new data
-                                callback.onSuccess(instance);
-                            } finally {
-                                model.close();
-                            }
+                            // Give the callback the new data
+                            callback.onSuccess(instance);
+                        } finally {
+                            model.close();
                         }
                     });
                 }
 
                 @Override
                 public void onFailure(int statusCode, Header[] headers, String responseString, final Throwable throwable) {
-                    mHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Log.e(TAG, "Failed: ", throwable);
-                            callback.onFailure(throwable);
-                        }
+                    mHandler.post(() -> {
+                        Log.e(TAG, "Failed: ", throwable);
+                        callback.onFailure(throwable);
                     });
                 }
             });
