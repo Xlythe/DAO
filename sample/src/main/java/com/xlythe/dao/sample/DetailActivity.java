@@ -1,8 +1,6 @@
 package com.xlythe.dao.sample;
 
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
@@ -10,6 +8,9 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.xlythe.dao.sample.model.Note;
+
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
 
 public class DetailActivity extends AppCompatActivity {
     private static final String TAG = DetailActivity.class.getSimpleName();

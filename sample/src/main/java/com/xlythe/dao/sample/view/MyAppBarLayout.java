@@ -1,10 +1,10 @@
 package com.xlythe.dao.sample.view;
 
 import android.content.Context;
-import android.support.design.widget.AppBarLayout;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
+
+import com.google.android.material.appbar.AppBarLayout;
 
 import java.util.List;
 

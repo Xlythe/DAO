@@ -3,15 +3,6 @@ package com.xlythe.dao.sample;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityOptionsCompat;
-import android.support.v4.util.Pair;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,6 +10,16 @@ import android.widget.TextView;
 
 import com.xlythe.dao.Model;
 import com.xlythe.dao.sample.model.Note;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ActivityOptionsCompat;
+import androidx.core.util.Pair;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 public class MainActivity extends AppCompatActivity implements Model.Observer {
 
@@ -103,8 +104,8 @@ public class MainActivity extends AppCompatActivity implements Model.Observer {
             ViewHolder(View view) {
                 super(view);
                 mRoot = view;
-                mTitleView = (TextView) view.findViewById(R.id.title);
-                mBodyView = (TextView) view.findViewById(R.id.body);
+                mTitleView = view.findViewById(R.id.title);
+                mBodyView = view.findViewById(R.id.body);
             }
 
             void setNote(Note note) {
@@ -123,18 +124,10 @@ public class MainActivity extends AppCompatActivity implements Model.Observer {
                     return;
                 }
 
-                mRoot.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        listener.onItemClick(getNote());
-                    }
-                });
-                mRoot.setOnLongClickListener(new View.OnLongClickListener() {
-                    @Override
-                    public boolean onLongClick(View v) {
-                        listener.onItemLongClick(getNote());
-                        return true;
-                    }
+                mRoot.setOnClickListener(v -> listener.onItemClick(getNote()));
+                mRoot.setOnLongClickListener(v -> {
+                    listener.onItemLongClick(getNote());
+                    return true;
                 });
             }
         }
