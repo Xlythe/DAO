@@ -24,7 +24,7 @@ android {
 
 dependencies {
     api fileTree(include: ['*.jar'], dir: 'libs')
-    api 'com.loopj.android:android-async-http:1.4.5'
+    api 'com.loopj.android:android-async-http:1.4.9'
     testImplementation 'org.robolectric:robolectric:3.1.1'
     testImplementation 'junit:junit:4.12'
 }
