@@ -9,8 +9,8 @@ import com.loopj.android.http.JsonHttpResponseHandler;
 import com.loopj.android.http.PersistentCookieStore;
 import com.loopj.android.http.RequestParams;
 
-import org.apache.http.Header;
-import org.apache.http.entity.ByteArrayEntity;
+import cz.msebera.android.httpclient.Header;
+import cz.msebera.android.httpclient.entity.ByteArrayEntity;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -76,7 +76,7 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
             }
 
             @Override
-            public void onSuccess(int statusCode, Header[] headers, final JSONObject response) {
+            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
                 handler.post(() -> {
                     final T model = getModel();
                     // Add all the items from the server to the local cache db
@@ -113,7 +113,7 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
             }
 
             @Override
-            public void onSuccess(int statusCode, Header[] headers, final JSONObject response) {
+            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
                 handler.post(() -> {
                     final T model = getModel();
                     try {
