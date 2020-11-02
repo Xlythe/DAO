@@ -108,6 +108,22 @@ public abstract class BaseModel<T extends BaseModel> implements Serializable {
     }
 
     @Override
+    public int hashCode() {
+        int result = 17;
+        for (Field field : mFields) {
+            if (isUnique(field)) {
+                try {
+                    Object o = field.get(this);
+                    result = 31 * result + ((o == null) ? 0 : o.hashCode());
+                } catch (IllegalAccessException e) {
+                    Log.e(TAG, "Should not happen", e);
+                }
+            }
+        }
+        return result;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (o == null) return false;
         if (o.getClass() != getClass()) return false;
