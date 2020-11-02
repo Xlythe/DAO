@@ -6,7 +6,7 @@ Where to Download
 -----------------
 ```groovy
 dependencies {
-  implementation 'com.xlythe:data-access-object:1.0.3'
+  implementation 'com.xlythe:data-access-object:2.0'
 }
 ```
 
@@ -162,16 +162,16 @@ To get more control over the connection, call RemoteModel.setServer().
 ```java
 RemoteModel.setServer(new Server() {
     @Override
-    public void get(String url, RequestParams params, JsonHttpResponseHandler responseHandler) {}
+    public void get(String url, JSONObject params, Callback<JSONResult> callback) {}
 
     @Override
-    public void post(String url, String json, JsonHttpResponseHandler responseHandler) {}
+    public void post(String url, JSONObject params, Callback<JSONResult> callback) {}
 
     @Override
-    public void put(String url, RequestParams params, JsonHttpResponseHandler responseHandler) {}
+    public void put(String url, JSONObject params, Callback<JSONResult> callback) {}
 
     @Override
-    public void delete(String url, JsonHttpResponseHandler responseHandler) {}
+    public void delete(String url, Callback<JSONResult> callback) {}
 });
 ```
 
