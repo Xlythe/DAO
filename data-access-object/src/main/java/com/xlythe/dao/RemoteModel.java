@@ -4,13 +4,10 @@ import android.content.Context;
 import android.os.Handler;
 import android.util.Log;
 
-import com.loopj.android.http.AsyncHttpClient;
-import com.loopj.android.http.JsonHttpResponseHandler;
-import com.loopj.android.http.PersistentCookieStore;
-import com.loopj.android.http.RequestParams;
+import com.xlythe.dao.remote.DefaultServer;
+import com.xlythe.dao.remote.JSONResult;
+import com.xlythe.dao.remote.Server;
 
-import cz.msebera.android.httpclient.Header;
-import cz.msebera.android.httpclient.entity.ByteArrayEntity;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -64,30 +61,20 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
         }
 
         final Handler handler = new Handler();
-        getServer(getContext()).post(mUrl, Transcriber.getJSONObject(getModel()).toString(), new JsonHttpResponseHandler() {
+        getServer(getContext()).post(mUrl, Transcriber.getJSONObject(getModel()), new Callback<JSONResult>() {
             @Override
-            public void onSuccess(int statusCode, Header[] headers, String responseString) {
-                try {
-                    onSuccess(statusCode, headers, new JSONObject(responseString));
-                } catch (JSONException | NullPointerException e) {
-                    Log.e(TAG, "Failed to parse " + responseString, e);
-                    onFailure(statusCode, headers, responseString, e);
-                }
-            }
-
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+            public void onSuccess(JSONResult response) {
                 handler.post(() -> {
                     final T model = getModel();
                     // Add all the items from the server to the local cache db
-                    Transcriber.inflate(model, response);
+                    Transcriber.inflate(model, response.asJSONObject());
                     model.save();
                     callback.onSuccess(model);
                 });
             }
 
             @Override
-            public void onFailure(int statusCode, Header[] headers, String responseString, final Throwable throwable) {
+            public void onFailure(Throwable throwable) {
                 handler.post(() -> {
                     Log.e(TAG, "Failed: ", throwable);
                     callback.onFailure(throwable);
@@ -106,14 +93,9 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
         }
 
         final Handler handler = new Handler();
-        getServer(getContext()).delete(mUrl + "/" + getUniqueKey(), new JsonHttpResponseHandler() {
+        getServer(getContext()).delete(mUrl + "/" + getUniqueKey(), new Callback<JSONResult>() {
             @Override
-            public void onSuccess(int statusCode, Header[] headers, String responseString) {
-                onSuccess(statusCode, headers, (JSONObject) null);
-            }
-
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+            public void onSuccess(JSONResult response) {
                 handler.post(() -> {
                     final T model = getModel();
                     try {
@@ -126,7 +108,7 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
             }
 
             @Override
-            public void onFailure(int statusCode, Header[] headers, String responseString, final Throwable throwable) {
+            public void onFailure(Throwable throwable) {
                 handler.post(() -> {
                     Log.e(TAG, "Failed: ", throwable);
                     callback.onFailure(throwable);
@@ -162,32 +144,27 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
                 return cache;
             }
 
-            final RequestParams requestParams = new RequestParams();
+            JSONObject params = new JSONObject();
             for(Param param : getParams()) {
-                requestParams.add(param.getKey(), param.getUnformattedValue().toString());
+                try {
+                    params.put(param.getKey(), param.getUnformattedValue().toString());
+                } catch (JSONException e) {
+                    throw new IllegalArgumentException("Invalid value for key " + param.getKey(), e);
+                }
             }
 
-            getServer(getContext()).get(mUrl, requestParams, new JsonHttpResponseHandler() {
+            getServer(getContext()).get(mUrl, params, new Callback<JSONResult>() {
                 @Override
-                public void onSuccess(int statusCode, Header[] headers, String responseString) {
-                    try {
-                        onSuccess(statusCode, headers, new JSONArray(responseString));
-                    } catch (JSONException | NullPointerException e) {
-                        Log.e(TAG, "Failed to parse " + responseString, e);
-                        onFailure(statusCode, headers, responseString, e);
-                    }
-                }
-
-                @Override
-                public void onSuccess(int statusCode, Header[] headers, final JSONArray response) {
+                public void onSuccess(JSONResult response) {
                     mHandler.post(() -> {
+                        final JSONArray array = response.asJSONArray();
                         final Q model = newInstance(getModelClass(), getContext());
                         try {
                             model.open();
                             // Add all the items from the server to the local cache db
-                            List<Q> list = new ArrayList<Q>(response.length());
-                            for (int i = 0; i < response.length(); i++) {
-                                Q instance = (Q) Transcriber.inflate(newInstance(getModelClass(), getContext()), response.getJSONObject(i));
+                            List<Q> list = new ArrayList<Q>(array.length());
+                            for (int i = 0; i < array.length(); i++) {
+                                Q instance = (Q) Transcriber.inflate(newInstance(getModelClass(), getContext()), array.getJSONObject(i));
                                 list.add(instance);
                                 model.getDataSource().save(instance);
                             }
@@ -213,7 +190,7 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
                 }
 
                 @Override
-                public void onFailure(int statusCode, Header[] headers, String responseString, final Throwable throwable) {
+                public void onFailure(Throwable throwable) {
                     mHandler.post(() -> {
                         Log.e(TAG, "Failed: ", throwable);
                         callback.onFailure(throwable);
@@ -268,26 +245,16 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
                 return cache;
             }
 
-            getServer(getContext()).post(mUrl, Transcriber.getJSONObject(cache).toString(), new JsonHttpResponseHandler() {
+            getServer(getContext()).post(mUrl, Transcriber.getJSONObject(cache), new Callback<JSONResult>() {
                 @Override
-                public void onSuccess(int statusCode, Header[] headers, String responseString) {
-                    try {
-                        onSuccess(statusCode, headers, new JSONObject(responseString));
-                    } catch (JSONException | NullPointerException e) {
-                        Log.e(TAG, "Failed to parse " + responseString, e);
-                        onFailure(statusCode, headers, responseString, e);
-                    }
-                }
-
-                @Override
-                public void onSuccess(int statusCode, Header[] headers, final JSONObject response) {
+                public void onSuccess(JSONResult response) {
                     mHandler.post(() -> {
                         final Q model = newInstance(getModelClass(), getContext());
                         try {
                             model.open();
 
                             // Add all the items from the server to the local cache db
-                            Q instance = (Q) Transcriber.inflate(newInstance(getModelClass(), getContext()), response);
+                            Q instance = Transcriber.inflate(newInstance(getModelClass(), getContext()), response.asJSONObject());
                             model.getDataSource().save(instance);
 
                             // Give the callback the new data
@@ -299,7 +266,7 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
                 }
 
                 @Override
-                public void onFailure(int statusCode, Header[] headers, String responseString, final Throwable throwable) {
+                public void onFailure(Throwable throwable) {
                     mHandler.post(() -> {
                         Log.e(TAG, "Failed: ", throwable);
                         callback.onFailure(throwable);
@@ -310,59 +277,4 @@ public abstract class RemoteModel<T extends RemoteModel> extends Model<T> {
             return null;
         }
     }
-
-    public interface Callback<T> {
-        void onSuccess(T object);
-        void onFailure(Throwable throwable);
-    }
-
-    public interface Server {
-        void get(String url, RequestParams params, JsonHttpResponseHandler responseHandler);
-        void post(String url, String json, JsonHttpResponseHandler responseHandler);
-        void put(String url, RequestParams params, JsonHttpResponseHandler responseHandler);
-        void delete(String url, JsonHttpResponseHandler responseHandler);
-    }
-
-    private static class DefaultServer implements Server {
-        private final AsyncHttpClient mClient = new AsyncHttpClient();
-        private final Context mContext;
-
-        DefaultServer(Context context) {
-            mContext = context.getApplicationContext();
-            mClient.setCookieStore(new PersistentCookieStore(mContext));
-        }
-
-        @Override
-        public void get(String url, RequestParams params, JsonHttpResponseHandler responseHandler) {
-            if (DEBUG) {
-                Log.d(TAG, "get="+url+", params="+params);
-            }
-            mClient.get(url, params, responseHandler);
-        }
-
-        @Override
-        public void post(String url, String json, JsonHttpResponseHandler responseHandler) {
-            if (DEBUG) {
-                Log.d(TAG, "post=" + url + ", json=" + json);
-            }
-            ByteArrayEntity entity = new ByteArrayEntity(json.getBytes());
-            mClient.post(mContext, url, entity, "application/json", responseHandler);
-        }
-
-        @Override
-        public void put(String url, RequestParams params, JsonHttpResponseHandler responseHandler) {
-            if (DEBUG) {
-                Log.d(TAG, "put="+url+", params="+params);
-            }
-            mClient.put(url, params, responseHandler);
-        }
-
-        @Override
-        public void delete(String url, JsonHttpResponseHandler responseHandler) {
-            if (DEBUG) {
-                Log.d(TAG, "delete="+url);
-            }
-            mClient.delete(url, responseHandler);
-        }
-    };
 }
