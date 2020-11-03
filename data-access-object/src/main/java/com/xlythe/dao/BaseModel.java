@@ -5,6 +5,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
@@ -32,7 +33,7 @@ import static com.xlythe.dao.Util.newInstance;
  *
  * All classes that extend Model must have a constructor that takes a context (and nothing else).
  */
-public abstract class BaseModel<T extends BaseModel> implements Serializable {
+public abstract class BaseModel<T extends BaseModel<T>> implements Serializable {
     private static final String TAG = BaseModel.class.getSimpleName();
     static final boolean DEBUG = false;
     static final String _ID = "_id";
@@ -99,7 +100,7 @@ public abstract class BaseModel<T extends BaseModel> implements Serializable {
         try {
             mDataSource.open();
         } catch(SQLException e) {
-            e.printStackTrace();
+            Log.e(TAG, "Failed to open database", e);
         }
     }
 
@@ -208,8 +209,12 @@ public abstract class BaseModel<T extends BaseModel> implements Serializable {
         }
 
         public void open() throws SQLException {
-            database = dbHelper.getWritableDatabase();
-            dbHelper.onCreate(database);
+            try {
+                database = dbHelper.getWritableDatabase();
+                dbHelper.onCreate(database);
+            } catch (SQLiteException e) {
+                throw new SQLException(e);
+            }
         }
 
         public void close() {
@@ -225,7 +230,7 @@ public abstract class BaseModel<T extends BaseModel> implements Serializable {
                     }
                 }
             } catch (IllegalAccessException e) {
-                e.printStackTrace();
+                Log.e(TAG, "Failed to read field", e);
             }
 
             // If no unique values were set, use the _id value instead.
@@ -327,6 +332,7 @@ public abstract class BaseModel<T extends BaseModel> implements Serializable {
             database.execSQL("DROP TABLE IF EXISTS " + getTableName() + ";");
         }
 
+        @SuppressWarnings("unchecked")
         public List<T> query(String orderBy, Param... params) {
             List<T> list = new ArrayList<T>();
             Cursor cursor = database.query(getTableName(), getColumns(), createQuery(params), null, null, null, orderBy);
@@ -341,6 +347,7 @@ public abstract class BaseModel<T extends BaseModel> implements Serializable {
             return list;
         }
 
+        @SuppressWarnings("unchecked")
         public T first(String orderBy, Param... params) {
             T instance = null;
             Cursor cursor = database.query(getTableName(), getColumns(), createQuery(params), null, null, null, orderBy);
@@ -357,6 +364,7 @@ public abstract class BaseModel<T extends BaseModel> implements Serializable {
             return database.query(getTableName(), getColumns(), createQuery(params), null, null, null, orderBy);
         }
 
+        @SuppressWarnings("unchecked")
         public List<T> getAll() {
             List<T> list = new ArrayList<T>();
             Cursor cursor = database.query(getTableName(), getColumns(), null, null, null, null, null);

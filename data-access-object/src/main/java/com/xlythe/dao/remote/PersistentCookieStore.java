@@ -21,7 +21,6 @@ import java.util.Set;
 
 public class PersistentCookieStore implements CookieStore {
     private static final String FILE_NAME = "PersistentCookieStore";
-    private static final String COOKIE_NAME_PREFIX = "cookie_";
 
     private final SharedPreferences sharedPreferences;
 
@@ -118,6 +117,10 @@ public class PersistentCookieStore implements CookieStore {
         return encodedCookies;
     }
 
+    private static String encode(SerializableHttpCookie cookie) throws JSONException {
+        return cookie.asJson().toString();
+    }
+
     private static Set<HttpCookie> decode(Collection<String> encodedCookies) {
         Set<HttpCookie> cookies = new HashSet<>();
         for (String encodedCookie : encodedCookies) {
@@ -128,10 +131,6 @@ public class PersistentCookieStore implements CookieStore {
             }
         }
         return cookies;
-    }
-
-    private static String encode(SerializableHttpCookie cookie) throws JSONException {
-        return cookie.asJson().toString();
     }
 
     private static HttpCookie decode(String encodedString) throws JSONException {

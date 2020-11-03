@@ -19,7 +19,7 @@ import static com.xlythe.dao.Util.newInstance;
  *
  * All classes that extend Model must have a constructor that takes a context (and nothing else).
  */
-public abstract class Model<T extends Model> extends BaseModel<T> {
+public abstract class Model<T extends Model<T>> extends BaseModel<T> {
     static final String TAG = Model.class.getSimpleName();
 
     private static final Map<Class<? extends Model<?>>, Set<Observer>> OBSERVERS = new HashMap<>();

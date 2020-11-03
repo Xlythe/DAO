@@ -15,7 +15,7 @@ public class JSONResult {
         try {
             return new JSONObject(result);
         } catch (JSONException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException(e);
         }
     }
 
@@ -23,7 +23,7 @@ public class JSONResult {
         try {
             return new JSONArray(result);
         } catch (JSONException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException(e);
         }
     }
 }
