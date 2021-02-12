@@ -7,6 +7,7 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.xlythe.dao.sample.model.Folder;
 import com.xlythe.dao.sample.model.Note;
 
 import androidx.annotation.Nullable;
@@ -55,6 +56,7 @@ public class DetailActivity extends AppCompatActivity {
                     .body(getNoteBody())
                     .timestamp(System.currentTimeMillis())
                     .insert();
+            new Folder.Query(this).name(getNoteTitle()).insert();
         }
         supportFinishAfterTransition();
     }
