@@ -3,6 +3,8 @@ package com.xlythe.dao.remote;
 import android.content.Context;
 import android.util.Log;
 
+import androidx.annotation.Nullable;
+
 import com.android.volley.NetworkResponse;
 import com.android.volley.ParseError;
 import com.android.volley.Request;
@@ -115,6 +117,10 @@ public class DefaultServer implements Server {
 
         @Override
         protected Response<JSONResult> parseNetworkResponse(NetworkResponse response) {
+            if (response.statusCode < 200 || response.statusCode >= 300) {
+                return Response.error(new ParseError(response));
+            }
+
             try {
                 String jsonString =
                         new String(
@@ -131,6 +137,7 @@ public class DefaultServer implements Server {
             return PROTOCOL_CONTENT_TYPE;
         }
 
+        @Nullable
         @Override
         public byte[] getBody() {
             try {

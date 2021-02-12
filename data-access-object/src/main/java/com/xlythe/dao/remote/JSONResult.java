@@ -7,7 +7,7 @@ import org.json.JSONObject;
 public class JSONResult {
     private final String result;
 
-    JSONResult(String result) {
+    public JSONResult(String result) {
         this.result = result;
     }
 
