@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.xlythe.dao.Transcriber.getContentValues;
+import static com.xlythe.dao.Transcriber.getName;
 import static com.xlythe.dao.Transcriber.inflate;
 import static com.xlythe.dao.Util.isBoolean;
 import static com.xlythe.dao.Util.isByteArray;
@@ -88,7 +89,7 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
                 try {
                     return field.get(this);
                 } catch (IllegalAccessException e) {
-                    Log.e(TAG, "Failed to access field " + Transcriber.getName(field), e);
+                    Log.e(TAG, "Failed to access field " + getName(field), e);
                 }
             }
         }
@@ -154,9 +155,14 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
     }
 
     Field getField(String name) throws NoSuchFieldException {
-        Field field = getClass().getDeclaredField(name);
-        field.setAccessible(true);
-        return field;
+        for (Field field : mFields) {
+            if (getName(field).equals(name)) {
+                field.setAccessible(true);
+                return field;
+            }
+        }
+
+        throw new NoSuchFieldException("No field " + name + " in class " + getModelClass());
     }
     
     @SuppressWarnings("unchecked")
@@ -200,7 +206,7 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
             types = new String[fields.length];
             for (int i = 0; i < fields.length; i++) {
                 Field field = fields[i];
-                columns[i] = Transcriber.getName(field);
+                columns[i] = getName(field);
                 types[i] = getType(field);
             }
 
@@ -225,7 +231,7 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
             try {
                 for (Field field : getFields()) {
                     if (isUnique(field) && field.get(instance) != null) {
-                        params.add(new Param(Transcriber.getName(field), field.get(instance)));
+                        params.add(new Param(getName(field), field.get(instance)));
                     }
                 }
             } catch (IllegalAccessException e) {
@@ -423,7 +429,7 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
                                 int value = field.getAnnotation(Version.class).value();
                                 if (value == i) {
                                     String type = getType(field);
-                                    database.execSQL("ALTER TABLE " + getTableName() + " ADD COLUMN " + Transcriber.getName(field) + " " + type);
+                                    database.execSQL("ALTER TABLE " + getTableName() + " ADD COLUMN " + getName(field) + " " + type);
                                 }
                             }
                         }

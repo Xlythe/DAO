@@ -14,7 +14,7 @@ class Folder(context: Context) : Model<Folder>(context) {
 
     class Query(context: Context) : Model.Query<Folder>(Folder::class.java, context) {
         fun name(name: String?): Query {
-            where("name", name)
+            where("custom_column_name", name)
             return this
         }
     }
