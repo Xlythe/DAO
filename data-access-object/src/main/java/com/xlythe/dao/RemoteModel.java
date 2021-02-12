@@ -2,6 +2,7 @@ package com.xlythe.dao;
 
 import android.content.Context;
 import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import com.xlythe.dao.remote.DefaultServer;
@@ -51,7 +52,6 @@ public abstract class RemoteModel<T extends RemoteModel<T>> extends Model<T> {
         return (T) this;
     }
 
-    @SuppressWarnings("unchecked")
     protected void save(final Callback<T> callback) {
         if (mUrl == null) {
             throw new IllegalStateException("No url set");
@@ -61,7 +61,7 @@ public abstract class RemoteModel<T extends RemoteModel<T>> extends Model<T> {
             return;
         }
 
-        final Handler handler = new Handler();
+        final Handler handler = new Handler(Looper.getMainLooper());
         getServer(getContext()).post(mUrl, Transcriber.getJSONObject(getModel()), new Callback<JSONResult>() {
             @Override
             public void onSuccess(JSONResult response) {
@@ -93,7 +93,7 @@ public abstract class RemoteModel<T extends RemoteModel<T>> extends Model<T> {
             return;
         }
 
-        final Handler handler = new Handler();
+        final Handler handler = new Handler(Looper.getMainLooper());
         getServer(getContext()).delete(mUrl + "/" + getUniqueKey(), new Callback<JSONResult>() {
             @Override
             public void onSuccess(JSONResult response) {
@@ -118,9 +118,9 @@ public abstract class RemoteModel<T extends RemoteModel<T>> extends Model<T> {
         });
     }
 
-    protected static class Query<Q extends RemoteModel<Q>> extends Model.Query<Q> {
+    public static class Query<Q extends RemoteModel<Q>> extends Model.Query<Q> {
         private String mUrl;
-        private Handler mHandler = new Handler();
+        private final Handler mHandler = new Handler(Looper.getMainLooper());
 
         public Query(Class<Q> clazz, Context context) {
             super(clazz, context);
@@ -163,9 +163,9 @@ public abstract class RemoteModel<T extends RemoteModel<T>> extends Model<T> {
                         try {
                             model.open();
                             // Add all the items from the server to the local cache db
-                            List<Q> list = new ArrayList<Q>(array.length());
+                            List<Q> list = new ArrayList<>(array.length());
                             for (int i = 0; i < array.length(); i++) {
-                                Q instance = (Q) Transcriber.inflate(newInstance(getModelClass(), getContext()), array.getJSONObject(i));
+                                Q instance = Transcriber.inflate(newInstance(getModelClass(), getContext()), array.getJSONObject(i));
                                 list.add(instance);
                                 model.getDataSource().save(instance);
                             }

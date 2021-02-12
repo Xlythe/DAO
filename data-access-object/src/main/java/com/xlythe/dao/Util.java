@@ -39,7 +39,7 @@ public class Util {
 
     static int getDatabaseVersion(Class<?> clazz) {
         if (clazz.isAnnotationPresent(Database.class)) {
-            Database annotation = (Database) clazz.getAnnotation(Database.class);
+            Database annotation = clazz.getAnnotation(Database.class);
             return annotation.version();
         }
         return 1;
@@ -47,7 +47,7 @@ public class Util {
 
     static boolean retainDataOnUpgrade(Class<?> clazz) {
         if (clazz.isAnnotationPresent(Database.class)) {
-            Database annotation = (Database) clazz.getAnnotation(Database.class);
+            Database annotation = clazz.getAnnotation(Database.class);
             return annotation.retainDataOnUpgrade();
         }
         return false;

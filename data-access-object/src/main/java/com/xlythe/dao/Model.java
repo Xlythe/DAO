@@ -24,7 +24,7 @@ public abstract class Model<T extends Model<T>> extends BaseModel<T> {
 
     private static final Map<Class<? extends Model<?>>, Set<Observer>> OBSERVERS = new HashMap<>();
 
-    protected static void registerObserver(Class<? extends Model<?>> clazz, Observer observer) {
+    public static void registerObserver(Class<? extends Model<?>> clazz, Observer observer) {
         if (DEBUG) Log.d(TAG, "Registering observer for " + clazz);
         Set<Observer> set = OBSERVERS.get(clazz);
         if (set == null) {
@@ -34,7 +34,7 @@ public abstract class Model<T extends Model<T>> extends BaseModel<T> {
         set.add(observer);
     }
 
-    protected static void unregisterObserver(Class<? extends Model<?>> clazz, Observer observer) {
+    public static void unregisterObserver(Class<? extends Model<?>> clazz, Observer observer) {
         if (DEBUG) Log.d(TAG, "Unregistering observer for " + clazz);
         Set<Observer> set = OBSERVERS.get(clazz);
         if (set != null) {
@@ -88,7 +88,7 @@ public abstract class Model<T extends Model<T>> extends BaseModel<T> {
         }
     }
 
-    protected static class Query<Q extends Model<Q>> {
+    public static class Query<Q extends Model<Q>> {
         private final Class<Q> mClass;
         private final Context mContext;
         private final ArrayList<Param> mParams = new ArrayList<>();
@@ -144,7 +144,7 @@ public abstract class Model<T extends Model<T>> extends BaseModel<T> {
             Q model = newInstance(getModelClass(), getContext());
             try {
                 model.open();
-                return (Q) model.getDataSource().first(mOrderBy, getParams());
+                return model.getDataSource().first(mOrderBy, getParams());
             } finally {
                 model.close();
             }
@@ -152,7 +152,7 @@ public abstract class Model<T extends Model<T>> extends BaseModel<T> {
 
         public Q insert() {
             Q instance = newInstance(getModelClass(), getContext());
-            instance = (Q) Transcriber.inflate(instance, getParams());
+            instance = Transcriber.inflate(instance, getParams());
             instance.create();
             return instance;
         }
@@ -162,7 +162,7 @@ public abstract class Model<T extends Model<T>> extends BaseModel<T> {
         }
 
         protected Param[] getParams() {
-            return mParams.toArray(new Param[mParams.size()]);
+            return mParams.toArray(new Param[0]);
         }
 
         public String getOrderBy() {

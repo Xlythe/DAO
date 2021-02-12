@@ -14,7 +14,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 
 import static com.xlythe.dao.Transcriber.getContentValues;
@@ -70,7 +69,7 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
         } catch (NoSuchFieldException e) {
             Log.e(TAG, "Failed to find field _ID", e);
         }
-        mFields = fields.toArray(new Field[fields.size()]);
+        mFields = fields.toArray(new Field[0]);
 
         mDataSource = new ModelDataSource(getContext());
     }
@@ -184,7 +183,7 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
         }
     }
 
-    protected class ModelDataSource {
+    public class ModelDataSource {
         // Database fields
         private SQLiteDatabase database;
         private final ModelHelper dbHelper;
@@ -239,7 +238,7 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
             }
 
             // Otherwise, ignore _id and use their unique values
-            return params.toArray(new Param[params.size()]);
+            return params.toArray(new Param[0]);
         }
 
         private String createQuery(Param... params) {
@@ -332,13 +331,12 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
             database.execSQL("DROP TABLE IF EXISTS " + getTableName() + ";");
         }
 
-        @SuppressWarnings("unchecked")
         public List<T> query(String orderBy, Param... params) {
-            List<T> list = new ArrayList<T>();
+            List<T> list = new ArrayList<>();
             Cursor cursor = database.query(getTableName(), getColumns(), createQuery(params), null, null, null, orderBy);
             cursor.moveToFirst();
             while (!cursor.isAfterLast()) {
-                T newInstance = (T) newInstance(getModelClass(), mContext);
+                T newInstance = newInstance(getModelClass(), mContext);
                 inflate(newInstance, cursor);
                 list.add(newInstance);
                 cursor.moveToNext();
@@ -347,13 +345,12 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
             return list;
         }
 
-        @SuppressWarnings("unchecked")
         public T first(String orderBy, Param... params) {
             T instance = null;
             Cursor cursor = database.query(getTableName(), getColumns(), createQuery(params), null, null, null, orderBy);
             cursor.moveToFirst();
             if (!cursor.isAfterLast()) {
-                instance = (T) newInstance(getModelClass(), mContext);
+                instance = newInstance(getModelClass(), mContext);
                 inflate(instance, cursor);
             }
             cursor.close();
@@ -364,13 +361,12 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
             return database.query(getTableName(), getColumns(), createQuery(params), null, null, null, orderBy);
         }
 
-        @SuppressWarnings("unchecked")
         public List<T> getAll() {
-            List<T> list = new ArrayList<T>();
+            List<T> list = new ArrayList<>();
             Cursor cursor = database.query(getTableName(), getColumns(), null, null, null, null, null);
             cursor.moveToFirst();
             while (!cursor.isAfterLast()) {
-                T newInstance = (T) newInstance(getModelClass(), mContext);
+                T newInstance = newInstance(getModelClass(), mContext);
                 inflate(newInstance, cursor);
                 list.add(newInstance);
                 cursor.moveToNext();
