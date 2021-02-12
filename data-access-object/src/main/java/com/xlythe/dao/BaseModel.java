@@ -375,6 +375,12 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
             return list;
         }
 
+        public int delete(Param... params) {
+            int rowsDeleted = database.delete(getTableName(), createQuery(params), null);
+            Log.i(TAG, "Removed " + rowsDeleted + " rows");
+            return rowsDeleted;
+        }
+
         private class ModelHelper extends SQLiteOpenHelper {
             public ModelHelper(Context context, String databaseName) {
                 super(context, databaseName, null, getDatabaseVersion());

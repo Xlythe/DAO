@@ -157,6 +157,16 @@ public abstract class Model<T extends Model<T>> extends BaseModel<T> {
             return instance;
         }
 
+        public void delete() {
+            Q model = newInstance(getModelClass(), getContext());
+            try {
+                model.open();
+                model.getDataSource().delete(getParams());
+            } finally {
+                model.close();
+            }
+        }
+
         protected final Context getContext() {
             return mContext;
         }
