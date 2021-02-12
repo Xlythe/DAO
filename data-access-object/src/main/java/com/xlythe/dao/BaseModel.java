@@ -347,7 +347,7 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
 
         public T first(String orderBy, Param... params) {
             T instance = null;
-            Cursor cursor = database.query(getTableName(), getColumns(), createQuery(params), null, null, null, orderBy);
+            Cursor cursor = database.query(getTableName(), getColumns(), createQuery(params), null, null, null, orderBy, "1");
             cursor.moveToFirst();
             if (!cursor.isAfterLast()) {
                 instance = newInstance(getModelClass(), mContext);
