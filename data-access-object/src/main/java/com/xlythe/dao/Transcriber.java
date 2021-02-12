@@ -2,6 +2,7 @@ package com.xlythe.dao;
 
 import android.content.ContentValues;
 import android.database.Cursor;
+import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
 
@@ -27,17 +28,17 @@ public class Transcriber {
         try {
             for (Field field : instance.getFields()) {
                 if (isInt(field)) {
-                    field.setInt(instance, cursor.getInt(cursor.getColumnIndex(field.getName())));
+                    field.setInt(instance, cursor.getInt(cursor.getColumnIndex(getName(field))));
                 } else if (isLong(field)) {
-                    field.setLong(instance, cursor.getLong(cursor.getColumnIndex(field.getName())));
+                    field.setLong(instance, cursor.getLong(cursor.getColumnIndex(getName(field))));
                 } else if (isFloat(field)) {
-                    field.setFloat(instance, cursor.getFloat(cursor.getColumnIndex(field.getName())));
+                    field.setFloat(instance, cursor.getFloat(cursor.getColumnIndex(getName(field))));
                 } else if (isBoolean(field)) {
-                    field.setBoolean(instance, 1 == cursor.getInt(cursor.getColumnIndex(field.getName())));
+                    field.setBoolean(instance, 1 == cursor.getInt(cursor.getColumnIndex(getName(field))));
                 } else if (isString(field)) {
-                    field.set(instance, cursor.getString(cursor.getColumnIndex(field.getName())));
+                    field.set(instance, cursor.getString(cursor.getColumnIndex(getName(field))));
                 } else if (isByteArray(field)) {
-                    field.set(instance, cursor.getBlob(cursor.getColumnIndex(field.getName())));
+                    field.set(instance, cursor.getBlob(cursor.getColumnIndex(getName(field))));
                 } else {
                     throw new UnsupportedClassVersionError(field.getType() + " is not supported");
                 }
@@ -55,21 +56,21 @@ public class Transcriber {
         try {
             for (Field field : instance.getFields()) {
                 // Special case for _ID, which is a field we add ourselves.
-                if (BaseModel._ID.equals(field.getName()) && !object.has(BaseModel._ID)) {
+                if (BaseModel._ID.equals(getName(field)) && !object.has(BaseModel._ID)) {
                     continue;
                 }
                 if (isInt(field)) {
-                    field.setInt(instance, object.getInt(field.getName()));
+                    field.setInt(instance, object.getInt(getName(field)));
                 } else if (isLong(field)) {
-                    field.setLong(instance, object.getLong(field.getName()));
+                    field.setLong(instance, object.getLong(getName(field)));
                 } else if (isFloat(field)) {
-                    field.setFloat(instance, (float) object.getDouble(field.getName()));
+                    field.setFloat(instance, (float) object.getDouble(getName(field)));
                 } else if (isBoolean(field)) {
-                    field.setBoolean(instance, object.getBoolean(field.getName()));
+                    field.setBoolean(instance, object.getBoolean(getName(field)));
                 } else if (isString(field)) {
-                    field.set(instance, object.getString(field.getName()));
+                    field.set(instance, object.getString(getName(field)));
                 } else if (isByteArray(field)) {
-                    byte[] bytes = Base64.decode(object.getString(field.getName()), Base64.DEFAULT);
+                    byte[] bytes = Base64.decode(object.getString(getName(field)), Base64.DEFAULT);
                     field.set(instance, bytes);
                 } else {
                     throw new UnsupportedClassVersionError(field.getType() + " is not supported");
@@ -122,20 +123,20 @@ public class Transcriber {
         try {
             for (Field field : instance.getFields()) {
                 if (BaseModel.DEBUG) {
-                    Log.v(TAG, "getContentValues: " + field.getName());
+                    Log.v(TAG, "getContentValues: " + getName(field));
                 }
                 if (isInt(field)) {
-                    contentValues.put(field.getName(), field.getInt(instance));
+                    contentValues.put(getName(field), field.getInt(instance));
                 } else if (isLong(field)) {
-                    contentValues.put(field.getName(), field.getLong(instance));
+                    contentValues.put(getName(field), field.getLong(instance));
                 } else if (isFloat(field)) {
-                    contentValues.put(field.getName(), field.getFloat(instance));
+                    contentValues.put(getName(field), field.getFloat(instance));
                 } else if (isBoolean(field)) {
-                    contentValues.put(field.getName(), field.getBoolean(instance) ? 1 : 0);
+                    contentValues.put(getName(field), field.getBoolean(instance) ? 1 : 0);
                 } else if (isString(field)) {
-                    contentValues.put(field.getName(), (String) field.get(instance));
+                    contentValues.put(getName(field), (String) field.get(instance));
                 } else if (isByteArray(field)) {
-                    contentValues.put(field.getName(), (byte[]) field.get(instance));
+                    contentValues.put(getName(field), (byte[]) field.get(instance));
                 } else {
                     throw new UnsupportedClassVersionError(field.getType() + " is not supported");
                 }
@@ -155,19 +156,19 @@ public class Transcriber {
         try {
             for (Field field : instance.getFields()) {
                 if (isInt(field)) {
-                    object.put(field.getName(), field.getInt(instance));
+                    object.put(getName(field), field.getInt(instance));
                 } else if (isLong(field)) {
-                    object.put(field.getName(), field.getLong(instance));
+                    object.put(getName(field), field.getLong(instance));
                 } else if (isFloat(field)) {
-                    object.put(field.getName(), field.getFloat(instance));
+                    object.put(getName(field), field.getFloat(instance));
                 } else if (isBoolean(field)) {
-                    object.put(field.getName(), field.getBoolean(instance));
+                    object.put(getName(field), field.getBoolean(instance));
                 } else if (isString(field)) {
-                    object.put(field.getName(), field.get(instance));
+                    object.put(getName(field), field.get(instance));
                 } else if (isByteArray(field)) {
                     byte[] bytes = (byte[]) field.get(instance);
                     if (bytes != null) {
-                        object.put(field.getName(), Base64.encodeToString(bytes, Base64.DEFAULT));
+                        object.put(getName(field), Base64.encodeToString(bytes, Base64.DEFAULT));
                     }
                 } else {
                     throw new UnsupportedClassVersionError(field.getType() + " is not supported");
@@ -179,5 +180,15 @@ public class Transcriber {
             Log.e(TAG, "Trouble parsing the json object", e);
         }
         return object;
+    }
+
+    static String getName(Field field) {
+        if (field.isAnnotationPresent(Schema.class)) {
+            String columnName = field.getAnnotation(Schema.class).columnName();
+            if (!TextUtils.isEmpty(columnName)) {
+                return columnName;
+            }
+        }
+        return field.getName();
     }
 }

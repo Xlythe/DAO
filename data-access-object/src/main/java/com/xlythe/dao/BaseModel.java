@@ -88,7 +88,7 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
                 try {
                     return field.get(this);
                 } catch (IllegalAccessException e) {
-                    Log.e(TAG, "Failed to access field " + field.getName(), e);
+                    Log.e(TAG, "Failed to access field " + Transcriber.getName(field), e);
                 }
             }
         }
@@ -200,7 +200,7 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
             types = new String[fields.length];
             for (int i = 0; i < fields.length; i++) {
                 Field field = fields[i];
-                columns[i] = field.getName();
+                columns[i] = Transcriber.getName(field);
                 types[i] = getType(field);
             }
 
@@ -225,7 +225,7 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
             try {
                 for (Field field : getFields()) {
                     if (isUnique(field) && field.get(instance) != null) {
-                        params.add(new Param(field.getName(), field.get(instance)));
+                        params.add(new Param(Transcriber.getName(field), field.get(instance)));
                     }
                 }
             } catch (IllegalAccessException e) {
@@ -423,7 +423,7 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
                                 int value = field.getAnnotation(Version.class).value();
                                 if (value == i) {
                                     String type = getType(field);
-                                    database.execSQL("ALTER TABLE " + getTableName() + " ADD COLUMN " + field.getName() + " " + type);
+                                    database.execSQL("ALTER TABLE " + getTableName() + " ADD COLUMN " + Transcriber.getName(field) + " " + type);
                                 }
                             }
                         }
