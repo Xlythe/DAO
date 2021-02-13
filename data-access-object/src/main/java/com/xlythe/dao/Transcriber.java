@@ -59,6 +59,12 @@ public class Transcriber {
                 if (BaseModel._ID.equals(getName(field)) && !object.has(BaseModel._ID)) {
                     continue;
                 }
+
+                // Ignore null values, since our instance will default all fields to null
+                if (object.isNull(getName(field))) {
+                    continue;
+                }
+
                 if (isInt(field)) {
                     field.setInt(instance, object.getInt(getName(field)));
                 } else if (isLong(field)) {
