@@ -298,15 +298,14 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
             ContentValues values = getContentValues(instance);
             values.remove(_ID);
             if (DEBUG) Log.d(TAG, "Creating new entry values{" + values + "}");
-            long _id = database.insert(getTableName(), null, values);
-            instance._id = _id;
+            instance._id = database.insertWithOnConflict(getTableName(), null, values, SQLiteDatabase.CONFLICT_REPLACE);
         }
 
         public void update(T instance) {
             String query = createQuery(getUniqueParams(instance));
             if (DEBUG) Log.d(TAG, "Updating existing entry. query{" + query + "}");
             ContentValues values = getContentValues(instance);
-            database.update(getTableName(), values, query, null);
+            database.updateWithOnConflict(getTableName(), values, query, null, SQLiteDatabase.CONFLICT_REPLACE);
         }
 
         public void save(T instance) {
