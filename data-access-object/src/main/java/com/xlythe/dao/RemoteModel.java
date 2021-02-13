@@ -61,7 +61,7 @@ public abstract class RemoteModel<T extends RemoteModel<T>> extends Model<T> {
             return;
         }
 
-        final Handler handler = new Handler(Looper.getMainLooper());
+        Handler handler = new Handler(Looper.getMainLooper());
         getServer(getContext()).post(mUrl, Transcriber.getJSONObject(getModel()), new Callback<JSONResult>() {
             @Override
             public void onSuccess(JSONResult response) {
@@ -93,7 +93,7 @@ public abstract class RemoteModel<T extends RemoteModel<T>> extends Model<T> {
             return;
         }
 
-        final Handler handler = new Handler(Looper.getMainLooper());
+        Handler handler = new Handler(Looper.getMainLooper());
         getServer(getContext()).delete(mUrl + "/" + getUniqueKey(), new Callback<JSONResult>() {
             @Override
             public void onSuccess(JSONResult response) {
@@ -162,21 +162,16 @@ public abstract class RemoteModel<T extends RemoteModel<T>> extends Model<T> {
                         final Q model = newInstance(getModelClass(), getContext());
                         try {
                             model.open();
+
+                            // Clean up the old cache
+                            model.getDataSource().delete(getParams());
+
                             // Add all the items from the server to the local cache db
                             List<Q> list = new ArrayList<>(array.length());
                             for (int i = 0; i < array.length(); i++) {
                                 Q instance = Transcriber.inflate(newInstance(getModelClass(), getContext()), array.getJSONObject(i));
                                 list.add(instance);
                                 model.getDataSource().save(instance);
-                            }
-
-                            // Clean up any items in the cache that didn't exist on the server
-                            Log.d(TAG, "Checking cache for any old variables");
-                            for (Q instance : cache) {
-                                if (!list.contains(instance)) {
-                                    Log.d(TAG, "Deleting instance");
-                                    instance.delete();
-                                }
                             }
 
                             // Give the callback the new data
