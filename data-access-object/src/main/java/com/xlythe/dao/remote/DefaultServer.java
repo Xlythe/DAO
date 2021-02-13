@@ -12,10 +12,12 @@ import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyLog;
 import com.android.volley.toolbox.HttpHeaderParser;
+import com.android.volley.toolbox.JsonRequest;
 import com.android.volley.toolbox.Volley;
 import com.xlythe.dao.Callback;
 import com.xlythe.dao.Model;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
@@ -23,6 +25,7 @@ import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.CookieStore;
+import java.util.Iterator;
 
 public class DefaultServer implements Server {
     static final String TAG = Server.class.getSimpleName();
@@ -44,7 +47,19 @@ public class DefaultServer implements Server {
             Log.d(TAG, "get=" + url + ", params=" + params);
         }
 
-        mRequestQueue.add(new JsonRequest(Request.Method.GET, url, params, callback::onSuccess, callback::onFailure));
+        StringBuilder encodedUrl = new StringBuilder(url);
+        for (Iterator<String> it = params.keys(); it.hasNext();) {
+            String key = it.next();
+            encodedUrl.append(encodedUrl.toString().contains("?") ? "&" : "?");
+            try {
+                encodedUrl.append(key).append("=").append(params.get(key));
+            } catch (JSONException e) {
+                // Should not happen
+                throw new RuntimeException(e);
+            }
+        }
+
+        mRequestQueue.add(new JsonRequest(Request.Method.GET, encodedUrl.toString(), callback::onSuccess, callback::onFailure));
     }
 
     @Override
