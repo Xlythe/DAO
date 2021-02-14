@@ -6,7 +6,7 @@ Where to Download
 -----------------
 ```groovy
 dependencies {
-  implementation 'com.xlythe:data-access-object:2.2.5'
+  implementation 'com.xlythe:data-access-object:2.3'
 }
 ```
 
