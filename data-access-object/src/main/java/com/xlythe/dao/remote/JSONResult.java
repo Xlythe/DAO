@@ -26,4 +26,22 @@ public class JSONResult {
             throw new IllegalStateException(e);
         }
     }
+
+    public boolean isJSONObject() {
+        try {
+            asJSONObject();
+            return true;
+        } catch (IllegalStateException e) {
+            return false;
+        }
+    }
+
+    public boolean isJSONArray() {
+        try {
+            asJSONArray();
+            return true;
+        } catch (IllegalStateException e) {
+            return false;
+        }
+    }
 }

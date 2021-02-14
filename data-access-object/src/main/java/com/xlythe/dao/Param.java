@@ -6,10 +6,16 @@ public final class Param {
     private final String key;
     private final String value;
     private final Object unformattedValue;
+    private final boolean isPrimaryKey;
 
     public Param(String key, Object value) {
+        this(key, value, /*isPrimaryKey=*/false);
+    }
+
+    public Param(String key, Object value, boolean isPrimaryKey) {
         this.key = key;
         this.unformattedValue = value;
+        this.isPrimaryKey = isPrimaryKey;
 
         if (value == null) {
             this.value = "NULL";
@@ -34,6 +40,10 @@ public final class Param {
 
     Object getUnformattedValue() {
         return unformattedValue;
+    }
+
+    public boolean isPrimaryKey() {
+        return isPrimaryKey;
     }
 
     @Override

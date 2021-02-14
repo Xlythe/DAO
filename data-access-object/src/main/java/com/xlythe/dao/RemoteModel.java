@@ -136,7 +136,7 @@ public abstract class RemoteModel<T extends RemoteModel<T>> extends Model<T> {
             return all(null);
         }
 
-        public List<Q> all(final Callback<List<Q>> callback) {
+        public List<Q> all(Callback<List<Q>> callback) {
             final List<Q> cache = super.all();
 
             // Don't ping the server if a callback wasn't sent
@@ -158,7 +158,14 @@ public abstract class RemoteModel<T extends RemoteModel<T>> extends Model<T> {
                 @Override
                 public void onSuccess(JSONResult response) {
                     mHandler.post(() -> {
-                        final JSONArray array = response.asJSONArray();
+                        final JSONArray array;
+                        try {
+                            array = response.asJSONArray();
+                        } catch (RuntimeException e) {
+                            onFailure(e);
+                            return;
+                        }
+
                         final Q model = newInstance(getModelClass(), getContext());
                         try {
                             model.open();
@@ -202,7 +209,7 @@ public abstract class RemoteModel<T extends RemoteModel<T>> extends Model<T> {
             return first(null);
         }
 
-        public Q first(final Callback<Q> callback) {
+        public Q first(Callback<Q> callback) {
             Q cache = super.first();
 
             if (callback == null) {
@@ -210,16 +217,79 @@ public abstract class RemoteModel<T extends RemoteModel<T>> extends Model<T> {
                 return cache;
             }
 
-            // Query the server for new results (this will update the database)
-            all(new Callback<List<Q>>() {
+            String primaryKey = null;
+            JSONObject params = new JSONObject();
+            for(Param param : getParams()) {
+                if (param.isPrimaryKey()) {
+                    primaryKey = param.getValue();
+                    continue;
+                }
+
+                try {
+                    params.put(param.getKey(), param.getUnformattedValue().toString());
+                } catch (JSONException e) {
+                    throw new IllegalArgumentException("Invalid value for key " + param.getKey(), e);
+                }
+            }
+
+            // If we can look up the value directly, rather than as a list, we will prefer to do so.
+            String url = mUrl;
+            if (primaryKey != null) {
+                if (!url.endsWith("/")) {
+                    url += "/";
+                }
+                url = url + primaryKey;
+            }
+
+            getServer(getContext()).get(url, params, new Callback<JSONResult>() {
                 @Override
-                public void onSuccess(List<Q> results) {
-                    callback.onSuccess(results.isEmpty() ? null : results.get(0));
+                public void onSuccess(JSONResult response) {
+                    mHandler.post(() -> {
+                        final JSONObject object;
+                        try {
+                            object = getFirst(response);
+                        } catch (RuntimeException e) {
+                            onFailure(e);
+                            return;
+                        }
+
+                        final Q model = newInstance(getModelClass(), getContext());
+                        try {
+                            model.open();
+
+                            // Clean up the old cache
+                            model.getDataSource().delete(getParams());
+
+                            // Add all the items from the server to the local cache db
+                            Q instance = Transcriber.inflate(newInstance(getModelClass(), getContext()), object);
+                            model.getDataSource().save(instance);
+
+                            // Give the callback the new data
+                            callback.onSuccess(instance);
+                        } finally {
+                            model.close();
+                        }
+                    });
                 }
 
                 @Override
                 public void onFailure(Throwable throwable) {
-                    callback.onFailure(throwable);
+                    mHandler.post(() -> {
+                        Log.e(TAG, "Failed: ", throwable);
+                        callback.onFailure(throwable);
+                    });
+                }
+
+                private JSONObject getFirst(JSONResult response) {
+                    if (response.isJSONObject()) {
+                        return response.asJSONObject();
+                    }
+
+                    try {
+                        return response.asJSONArray().getJSONObject(0);
+                    } catch(JSONException | IndexOutOfBoundsException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             });
 
