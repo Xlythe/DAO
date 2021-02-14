@@ -333,6 +333,10 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
         }
 
         public void dropTable() {
+            dropTable(database);
+        }
+
+        private void dropTable(SQLiteDatabase database) {
             database.execSQL("DROP TABLE IF EXISTS " + getTableName() + ";");
         }
 
@@ -434,7 +438,7 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
                         }
                     }
                 } else {
-                    dropTable();
+                    dropTable(database);
                     onCreate(database);
                 }
             }
