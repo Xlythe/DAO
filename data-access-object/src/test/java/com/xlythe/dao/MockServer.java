@@ -1,49 +1,51 @@
 package com.xlythe.dao;
 
-import com.loopj.android.http.JsonHttpResponseHandler;
-import com.loopj.android.http.RequestParams;
+import com.xlythe.dao.remote.JSONResult;
+import com.xlythe.dao.remote.Server;
 
-public class MockServer implements RemoteModel.Server {
+import org.json.JSONObject;
+
+public class MockServer implements Server {
     private int responseCode = 500;
-    private String response = null;
+    private JSONResult response = null;
 
     @Override
-    public void get(String url, RequestParams params, JsonHttpResponseHandler responseHandler) {
+    public void get(String url, JSONObject params, Callback<JSONResult> callback) {
         if (responseCode >= 200 && responseCode < 300) {
-            responseHandler.onSuccess(responseCode, null, response);
+            callback.onSuccess(response);
         } else {
-            responseHandler.onFailure(responseCode, null, response, new RuntimeException(response));
+            callback.onFailure(new RuntimeException(response.toString()));
         }
     }
 
     @Override
-    public void post(String url, String json, JsonHttpResponseHandler responseHandler) {
+    public void post(String url, JSONObject params, Callback<JSONResult> callback) {
         if (responseCode >= 200 && responseCode < 300) {
-            responseHandler.onSuccess(responseCode, null, response);
+            callback.onSuccess(response);
         } else {
-            responseHandler.onFailure(responseCode, null, response, new RuntimeException(response));
+            callback.onFailure(new RuntimeException(response.toString()));
         }
     }
 
     @Override
-    public void put(String url, RequestParams params, JsonHttpResponseHandler responseHandler) {
+    public void put(String url, JSONObject params, Callback<JSONResult> callback) {
         if (responseCode >= 200 && responseCode < 300) {
-            responseHandler.onSuccess(responseCode, null, response);
+            callback.onSuccess(response);
         } else {
-            responseHandler.onFailure(responseCode, null, response, new RuntimeException(response));
+            callback.onFailure(new RuntimeException(response.toString()));
         }
     }
 
     @Override
-    public void delete(String url, JsonHttpResponseHandler responseHandler) {
+    public void delete(String url, Callback<JSONResult> callback) {
         if (responseCode >= 200 && responseCode < 300) {
-            responseHandler.onSuccess(responseCode, null, response);
+            callback.onSuccess(response);
         } else {
-            responseHandler.onFailure(responseCode, null, response, new RuntimeException(response));
+            callback.onFailure(new RuntimeException(response.toString()));
         }
     }
 
-    public void setResponse(int responseCode, String response) {
+    public void setResponse(int responseCode, JSONResult response) {
         this.responseCode = responseCode;
         this.response = response;
     }

@@ -5,7 +5,7 @@ import android.content.Context;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.robolectric.RobolectricGradleTestRunner;
+import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowLog;
@@ -14,16 +14,18 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertTrue;
 
-@RunWith(RobolectricGradleTestRunner.class)
-@Config(sdk=23, shadows={}, constants = BuildConfig.class)
+@RunWith(RobolectricTestRunner.class)
+@Config(minSdk=23)
 public class ModelTest {
     private Context mContext;
 
     @Before
     public void setup() {
         ShadowLog.stream = System.out;
-        mContext = RuntimeEnvironment.application;
+        mContext = RuntimeEnvironment.getApplication();
         new MockModel(mContext).dropTable();
     }
 
@@ -52,10 +54,10 @@ public class ModelTest {
         assertEquals(Integer.MAX_VALUE, new MockModel.Query(mContext).myLong(1).first().getMyInt());
 
         new MockModel.Query(mContext).myLong(2).myBool(true).insert();
-        assertEquals(true, new MockModel.Query(mContext).myLong(2).first().getMyBool());
+        assertTrue(new MockModel.Query(mContext).myLong(2).first().getMyBool());
 
         new MockModel.Query(mContext).myLong(3).myBool(false).insert();
-        assertEquals(false, new MockModel.Query(mContext).myLong(3).first().getMyBool());
+        assertFalse(new MockModel.Query(mContext).myLong(3).first().getMyBool());
 
         new MockModel.Query(mContext).myLong(Long.MAX_VALUE).insert();
         assertEquals(1, new MockModel.Query(mContext).myLong(Long.MAX_VALUE).count());
