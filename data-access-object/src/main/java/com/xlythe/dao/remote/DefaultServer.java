@@ -12,10 +12,8 @@ import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyLog;
 import com.android.volley.toolbox.HttpHeaderParser;
-import com.android.volley.toolbox.JsonRequest;
 import com.android.volley.toolbox.Volley;
 import com.xlythe.dao.Callback;
-import com.xlythe.dao.Model;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -105,10 +103,10 @@ public class DefaultServer implements Server {
             this(method, url, null, listener, errorListener);
         }
 
-        public JsonRequest(int method, String url, JSONObject requestBody, Response.Listener<JSONResult> listener, Response.ErrorListener errorListener) {
+        public JsonRequest(int method, String url, @Nullable JSONObject requestBody, Response.Listener<JSONResult> listener, Response.ErrorListener errorListener) {
             super(method, url, errorListener);
             mListener = listener;
-            mRequestBody = requestBody.toString();
+            mRequestBody = requestBody != null ? requestBody.toString() : null;
         }
 
         @Override
