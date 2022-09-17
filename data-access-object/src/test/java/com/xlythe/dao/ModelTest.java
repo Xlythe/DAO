@@ -17,6 +17,7 @@ import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
+import static junit.framework.Assert.fail;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(minSdk=23)
@@ -107,6 +108,13 @@ public class ModelTest {
         assertEquals(1, new MockModel.Query(mContext).myInt(3).limit(10).size());
 
         assertEquals(2, new MockModel.Query(mContext).orderByMyIntAsc().limit(1, 1).get(0).getMyInt());
+
+        try {
+            new MockModel.Query(mContext).orderByMyIntAsc().limit(-1);
+            fail();
+        } catch (IllegalArgumentException e) {
+            // ignored
+        }
     }
 
     @Test
@@ -124,6 +132,13 @@ public class ModelTest {
         assertEquals(4, new MockModel.Query(mContext).orderByMyIntAsc().limit(1, 3).get(0).getMyInt());
         assertEquals(5, new MockModel.Query(mContext).orderByMyIntAsc().limit(1, 4).get(0).getMyInt());
         assertEquals(0, new MockModel.Query(mContext).orderByMyIntAsc().limit(1, 5).size());
+
+        try {
+            new MockModel.Query(mContext).orderByMyIntAsc().limit(1, -1);
+            fail();
+        } catch (IllegalArgumentException e) {
+            // ignored
+        }
     }
 
     @Test
