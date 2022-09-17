@@ -398,6 +398,22 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
             return list;
         }
 
+        public List<T> query(String orderBy, int limit, int offset, Param... params) {
+            List<T> list = new ArrayList<>();
+            String query = createParameterizedQuery(params);
+            String[] queryArgs = createParameterizedArgs(params);
+            Cursor cursor = database.query(getTableName(), getColumns(), query, queryArgs, null, null, orderBy, offset + "," + limit);
+            cursor.moveToFirst();
+            while (!cursor.isAfterLast()) {
+                T newInstance = newInstance(getModelClass(), mContext);
+                inflate(newInstance, cursor);
+                list.add(newInstance);
+                cursor.moveToNext();
+            }
+            cursor.close();
+            return list;
+        }
+
         public T first(String orderBy, Param... params) {
             T instance = null;
             String query = createParameterizedQuery(params);

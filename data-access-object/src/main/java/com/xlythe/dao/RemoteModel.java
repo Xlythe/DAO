@@ -1,6 +1,7 @@
 package com.xlythe.dao;
 
 import android.content.Context;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -145,13 +146,151 @@ public abstract class RemoteModel<T extends RemoteModel<T>> extends Model<T> {
                 return cache;
             }
 
-            JSONObject params = new JSONObject();
-            for(Param param : getParams()) {
-                try {
-                    params.put(param.getKey(), param.getUnformattedValue().toString());
-                } catch (JSONException e) {
-                    throw new IllegalArgumentException("Invalid value for key " + param.getKey(), e);
+            getServer(getContext()).get(mUrl, asJsonObject(), new Callback<JSONResult>() {
+                @Override
+                public void onSuccess(JSONResult response) {
+                    mHandler.post(() -> {
+                        final JSONArray array;
+                        try {
+                            array = response.asJSONArray();
+                        } catch (RuntimeException e) {
+                            onFailure(e);
+                            return;
+                        }
+
+                        final Q model = newInstance(getModelClass(), getContext());
+                        try {
+                            model.open();
+
+                            // Clean up the old cache
+                            model.getDataSource().delete(getParams());
+
+                            // Add all the items from the server to the local cache db
+                            List<Q> list = new ArrayList<>(array.length());
+                            for (int i = 0; i < array.length(); i++) {
+                                Q instance = Transcriber.inflate(newInstance(getModelClass(), getContext()), array.getJSONObject(i));
+                                list.add(instance);
+                                model.getDataSource().save(instance);
+                            }
+
+                            // Give the callback the new data
+                            callback.onSuccess(list);
+                        } catch (JSONException e) {
+                            Log.e(TAG, "Exception parsing fields from JSON Object", e);
+                            callback.onFailure(e);
+                        } finally {
+                            model.close();
+                        }
+                    });
                 }
+
+                @Override
+                public void onFailure(Throwable throwable) {
+                    mHandler.post(() -> {
+                        Log.e(TAG, "Failed: ", throwable);
+                        callback.onFailure(throwable);
+                    });
+                }
+            });
+
+            return cache;
+        }
+
+        @Override
+        public List<Q> limit(int limit) {
+            return limit(limit, null);
+        }
+
+        public List<Q> limit(int limit, Callback<List<Q>> callback) {
+            final List<Q> cache = super.limit(limit);
+
+            // Don't ping the server if a callback wasn't sent
+            if (callback == null) {
+                Log.w(TAG, "No callback set, returning cached data");
+                return cache;
+            }
+
+            JSONObject params = asJsonObject();
+            try {
+                params.put("limit", limit);
+            } catch (JSONException e) {
+                throw new IllegalArgumentException("Invalid value for key limit", e);
+            }
+
+            getServer(getContext()).get(mUrl, params, new Callback<JSONResult>() {
+                @Override
+                public void onSuccess(JSONResult response) {
+                    mHandler.post(() -> {
+                        final JSONArray array;
+                        try {
+                            array = response.asJSONArray();
+                        } catch (RuntimeException e) {
+                            onFailure(e);
+                            return;
+                        }
+
+                        final Q model = newInstance(getModelClass(), getContext());
+                        try {
+                            model.open();
+
+                            // Clean up the old cache
+                            model.getDataSource().delete(getParams());
+
+                            // Add all the items from the server to the local cache db
+                            List<Q> list = new ArrayList<>(array.length());
+                            for (int i = 0; i < array.length(); i++) {
+                                Q instance = Transcriber.inflate(newInstance(getModelClass(), getContext()), array.getJSONObject(i));
+                                list.add(instance);
+                                model.getDataSource().save(instance);
+                            }
+
+                            // Give the callback the new data
+                            callback.onSuccess(list);
+                        } catch (JSONException e) {
+                            Log.e(TAG, "Exception parsing fields from JSON Object", e);
+                            callback.onFailure(e);
+                        } finally {
+                            model.close();
+                        }
+                    });
+                }
+
+                @Override
+                public void onFailure(Throwable throwable) {
+                    mHandler.post(() -> {
+                        Log.e(TAG, "Failed: ", throwable);
+                        callback.onFailure(throwable);
+                    });
+                }
+            });
+
+            return cache;
+        }
+
+        @Override
+        public List<Q> limit(int limit, int offset) {
+            return limit(limit, offset, null);
+        }
+
+        public List<Q> limit(int limit, int offset, Callback<List<Q>> callback) {
+            final List<Q> cache = super.limit(limit, offset);
+
+            // Don't ping the server if a callback wasn't sent
+            if (callback == null) {
+                Log.w(TAG, "No callback set, returning cached data");
+                return cache;
+            }
+
+            JSONObject params = asJsonObject();
+            try {
+                params.put("limit", limit);
+            } catch (JSONException e) {
+                throw new IllegalArgumentException("Invalid value for key limit", e);
+            }
+            try {
+                params.put("offset", offset);
+            } catch (JSONException e) {
+                throw new IllegalArgumentException("Invalid value for key offset", e);
             }
 
             getServer(getContext()).get(mUrl, params, new Callback<JSONResult>() {
@@ -218,17 +357,10 @@ public abstract class RemoteModel<T extends RemoteModel<T>> extends Model<T> {
             }
 
             String primaryKey = null;
-            JSONObject params = new JSONObject();
             for(Param param : getParams()) {
                 if (param.isPrimaryKey()) {
-                    primaryKey = param.getValue();
-                    continue;
-                }
-
-                try {
-                    params.put(param.getKey(), param.getUnformattedValue().toString());
-                } catch (JSONException e) {
-                    throw new IllegalArgumentException("Invalid value for key " + param.getKey(), e);
+                    primaryKey = param.getParameterizedValue();
+                    break;
                 }
             }
 
@@ -238,7 +370,16 @@ public abstract class RemoteModel<T extends RemoteModel<T>> extends Model<T> {
                 if (!url.endsWith("/")) {
                     url += "/";
                 }
-                url = url + primaryKey;
+                url += primaryKey;
+            }
+
+            JSONObject params = asJsonObject(true);
+            if (primaryKey == null) {
+                try {
+                    params.put("limit", 1);
+                } catch (JSONException e) {
+                    throw new IllegalArgumentException("Invalid value for key limit", e);
+                }
             }
 
             getServer(getContext()).get(url, params, new Callback<JSONResult>() {
@@ -341,6 +482,30 @@ public abstract class RemoteModel<T extends RemoteModel<T>> extends Model<T> {
             });
 
             return null;
+        }
+
+        private JSONObject asJsonObject() {
+            return asJsonObject(false);
+        }
+
+        private JSONObject asJsonObject(boolean skipPrimaryKey) {
+            JSONObject params = new JSONObject();
+            for(Param param : getParams()) {
+                if (skipPrimaryKey && param.isPrimaryKey()) {
+                    continue;
+                }
+
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                        params.put(param.getKey(), JSONObject.wrap(param.getUnformattedValue()));
+                    } else {
+                        params.put(param.getKey(), param.getUnformattedValue() == null ? JSONObject.NULL : param.getUnformattedValue().toString());
+                    }
+                } catch (JSONException e) {
+                    throw new IllegalArgumentException("Invalid value for key " + param.getKey(), e);
+                }
+            }
+            return params;
         }
     }
 }

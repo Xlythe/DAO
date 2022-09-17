@@ -15,6 +15,7 @@ import java.util.List;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
 
 @RunWith(RobolectricTestRunner.class)
@@ -104,6 +105,25 @@ public class ModelTest {
         assertEquals(5, new MockModel.Query(mContext).limit(Integer.MAX_VALUE).size());
 
         assertEquals(1, new MockModel.Query(mContext).myInt(3).limit(10).size());
+
+        assertEquals(2, new MockModel.Query(mContext).orderByMyIntAsc().limit(1, 1).get(0).getMyInt());
+    }
+
+    @Test
+    public void offset() {
+        new MockModel.Query(mContext).title("Hello World").myInt(1).myLong(1).myBool(true).insert();
+        new MockModel.Query(mContext).title("Hello World").myInt(2).myLong(1).myBool(true).insert();
+        new MockModel.Query(mContext).title("Hello World").myInt(3).myLong(2).myBool(true).insert();
+        new MockModel.Query(mContext).title("Hello World").myInt(4).myLong(2).myBool(true).insert();
+        new MockModel.Query(mContext).title("Hello World").myInt(5).myLong(2).myBool(false).insert();
+
+        assertEquals(5, new MockModel.Query(mContext).count());
+        assertEquals(1, new MockModel.Query(mContext).orderByMyIntAsc().limit(1, 0).get(0).getMyInt());
+        assertEquals(2, new MockModel.Query(mContext).orderByMyIntAsc().limit(1, 1).get(0).getMyInt());
+        assertEquals(3, new MockModel.Query(mContext).orderByMyIntAsc().limit(1, 2).get(0).getMyInt());
+        assertEquals(4, new MockModel.Query(mContext).orderByMyIntAsc().limit(1, 3).get(0).getMyInt());
+        assertEquals(5, new MockModel.Query(mContext).orderByMyIntAsc().limit(1, 4).get(0).getMyInt());
+        assertEquals(0, new MockModel.Query(mContext).orderByMyIntAsc().limit(1, 5).size());
     }
 
     @Test

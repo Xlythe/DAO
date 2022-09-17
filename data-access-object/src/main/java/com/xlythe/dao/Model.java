@@ -134,11 +134,21 @@ public abstract class Model<T extends Model<T>> extends BaseModel<T> {
             }
         }
 
-        public List<Q> limit(int count) {
+        public List<Q> limit(int limit) {
             Q model = newInstance(getModelClass(), getContext());
             try {
                 model.open();
-                return model.getDataSource().query(mOrderBy, count, getParams());
+                return model.getDataSource().query(mOrderBy, limit, getParams());
+            } finally {
+                model.close();
+            }
+        }
+
+        public List<Q> limit(int limit, int offset) {
+            Q model = newInstance(getModelClass(), getContext());
+            try {
+                model.open();
+                return model.getDataSource().query(mOrderBy, limit, offset, getParams());
             } finally {
                 model.close();
             }
