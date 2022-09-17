@@ -86,6 +86,27 @@ public class ModelTest {
     }
 
     @Test
+    public void limit() {
+        new MockModel.Query(mContext).title("Hello World").myInt(1).myLong(1).myBool(true).insert();
+        new MockModel.Query(mContext).title("Hello World").myInt(2).myLong(1).myBool(true).insert();
+        new MockModel.Query(mContext).title("Hello World").myInt(3).myLong(2).myBool(true).insert();
+        new MockModel.Query(mContext).title("Hello World").myInt(4).myLong(2).myBool(true).insert();
+        new MockModel.Query(mContext).title("Hello World").myInt(5).myLong(2).myBool(false).insert();
+
+        assertEquals(5, new MockModel.Query(mContext).count());
+        assertEquals(0, new MockModel.Query(mContext).limit(0).size());
+        assertEquals(1, new MockModel.Query(mContext).limit(1).size());
+        assertEquals(2, new MockModel.Query(mContext).limit(2).size());
+        assertEquals(3, new MockModel.Query(mContext).limit(3).size());
+        assertEquals(4, new MockModel.Query(mContext).limit(4).size());
+        assertEquals(5, new MockModel.Query(mContext).limit(5).size());
+        assertEquals(5, new MockModel.Query(mContext).limit(6).size());
+        assertEquals(5, new MockModel.Query(mContext).limit(Integer.MAX_VALUE).size());
+
+        assertEquals(1, new MockModel.Query(mContext).myInt(3).limit(10).size());
+    }
+
+    @Test
     public void save() {
         MockModel mockModel = new MockModel(mContext);
         mockModel.setTitle("Hello World");
