@@ -2,9 +2,12 @@ package com.xlythe.dao;
 
 import android.util.Base64;
 
+import androidx.annotation.NonNull;
+
 public final class Param {
     private final String key;
     private final String value;
+    private final String parameterizedValue;
     private final Object unformattedValue;
     private final boolean isPrimaryKey;
 
@@ -19,14 +22,19 @@ public final class Param {
 
         if (value == null) {
             this.value = "NULL";
+            this.parameterizedValue = null;
         } else if (value instanceof String) {
             this.value = "'" + value + "'";
+            this.parameterizedValue = value.toString();
         } else if (value instanceof byte[]) {
             this.value = Base64.encodeToString((byte[]) value, Base64.DEFAULT);
+            this.parameterizedValue = this.value;
         } else if (value instanceof Boolean) {
             this.value = (Boolean) value ? "1" : "0";
+            this.parameterizedValue = this.value;
         } else {
             this.value = value.toString();
+            this.parameterizedValue = this.value;
         }
     }
 
@@ -38,6 +46,10 @@ public final class Param {
         return value;
     }
 
+    String getParameterizedValue() {
+        return parameterizedValue;
+    }
+
     Object getUnformattedValue() {
         return unformattedValue;
     }
@@ -46,6 +58,7 @@ public final class Param {
         return isPrimaryKey;
     }
 
+    @NonNull
     @Override
     public String toString() {
         return key + ":" + value;

@@ -14,6 +14,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static com.xlythe.dao.Transcriber.getContentValues;
@@ -247,7 +248,7 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
             return params.toArray(new Param[0]);
         }
 
-        private String createQuery(Param... params) {
+        private String printQueryStatementForDebugging(Param... params) {
             StringBuilder query = new StringBuilder();
             for (Param param : params) {
                 if (query.length() > 0) {
@@ -258,6 +259,26 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
                 query.append(param.getValue());
             }
             return query.toString();
+        }
+
+        private String createParameterizedQuery(Param... params) {
+            StringBuilder query = new StringBuilder();
+            for (Param param : params) {
+                if (query.length() > 0) {
+                    query.append(" AND ");
+                }
+                query.append(param.getKey());
+                query.append(" = ?");
+            }
+            return query.toString();
+        }
+
+        private String[] createParameterizedArgs(Param... params) {
+            String[] args = new String[params.length];
+            for (int i=0; i<args.length; i++) {
+                args[i] = params[i].getParameterizedValue();
+            }
+            return args;
         }
 
         public String getDbName() {
@@ -302,10 +323,12 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
         }
 
         public void update(T instance) {
-            String query = createQuery(getUniqueParams(instance));
-            if (DEBUG) Log.d(TAG, "Updating existing entry. query{" + query + "}");
+            Param[] params = getUniqueParams(instance);
+            String query = createParameterizedQuery(params);
+            String[] queryArgs = createParameterizedArgs(params);
+            if (DEBUG) Log.d(TAG, "Updating existing entry. query{" + printQueryStatementForDebugging(params) + "}");
             ContentValues values = getContentValues(instance);
-            database.updateWithOnConflict(getTableName(), values, query, null, SQLiteDatabase.CONFLICT_REPLACE);
+            database.updateWithOnConflict(getTableName(), values, query, queryArgs, SQLiteDatabase.CONFLICT_REPLACE);
         }
 
         public void save(T instance) {
@@ -320,16 +343,19 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
         }
 
         public void delete(T instance) {
-            String query = createQuery(getUniqueParams(instance));
-            if (DEBUG) Log.d(TAG, "Deleting. query{" + query + "}");
-            int rowsDeleted = database.delete(getTableName(), query, null);
+            Param[] params = getUniqueParams(instance);
+            String query = createParameterizedQuery(params);
+            String[] queryArgs = createParameterizedArgs(params);
+            if (DEBUG) Log.d(TAG, "Deleting. query{" + printQueryStatementForDebugging(params) + "}");
+            int rowsDeleted = database.delete(getTableName(), query, queryArgs);
             Log.i(TAG, "Removed " + rowsDeleted + " rows");
         }
 
         public long count(Param... params) {
-            String query = createQuery(params);
-            if (DEBUG) Log.d(TAG, "Counting. query{" + query + "}");
-            return DatabaseUtils.queryNumEntries(database, getTableName(), query);
+            String query = createParameterizedQuery(params);
+            String[] queryArgs = createParameterizedArgs(params);
+            if (DEBUG) Log.d(TAG, "Counting. query{" + printQueryStatementForDebugging(params) + "}");
+            return DatabaseUtils.queryNumEntries(database, getTableName(), query, queryArgs);
         }
 
         public void dropTable() {
@@ -342,7 +368,9 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
 
         public List<T> query(String orderBy, Param... params) {
             List<T> list = new ArrayList<>();
-            Cursor cursor = database.query(getTableName(), getColumns(), createQuery(params), null, null, null, orderBy);
+            String query = createParameterizedQuery(params);
+            String[] queryArgs = createParameterizedArgs(params);
+            Cursor cursor = database.query(getTableName(), getColumns(), query, queryArgs, null, null, orderBy);
             cursor.moveToFirst();
             while (!cursor.isAfterLast()) {
                 T newInstance = newInstance(getModelClass(), mContext);
@@ -356,7 +384,11 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
 
         public T first(String orderBy, Param... params) {
             T instance = null;
-            Cursor cursor = database.query(getTableName(), getColumns(), createQuery(params), null, null, null, orderBy, "1");
+            String query = createParameterizedQuery(params);
+            String[] queryArgs = createParameterizedArgs(params);
+            if (DEBUG) Log.d(TAG, "First. query{" + printQueryStatementForDebugging(params) + "}");
+            if (DEBUG) Log.d(TAG, "First. query{" + query + ", " + Arrays.toString(queryArgs) + "}");
+            Cursor cursor = database.query(getTableName(), getColumns(), query, queryArgs, null, null, orderBy, "1");
             cursor.moveToFirst();
             if (!cursor.isAfterLast()) {
                 instance = newInstance(getModelClass(), mContext);
@@ -367,7 +399,9 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
         }
 
         public Cursor cursor(String orderBy, Param... params) {
-            return database.query(getTableName(), getColumns(), createQuery(params), null, null, null, orderBy);
+            String query = createParameterizedQuery(params);
+            String[] queryArgs = createParameterizedArgs(params);
+            return database.query(getTableName(), getColumns(), query, queryArgs, null, null, orderBy);
         }
 
         public List<T> getAll() {
@@ -385,7 +419,9 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
         }
 
         public int delete(Param... params) {
-            int rowsDeleted = database.delete(getTableName(), createQuery(params), null);
+            String query = createParameterizedQuery(params);
+            String[] queryArgs = createParameterizedArgs(params);
+            int rowsDeleted = database.delete(getTableName(), query, queryArgs);
             Log.i(TAG, "Removed " + rowsDeleted + " rows");
             return rowsDeleted;
         }
