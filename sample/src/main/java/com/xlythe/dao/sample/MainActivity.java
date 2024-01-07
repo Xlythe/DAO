@@ -1,5 +1,6 @@
 package com.xlythe.dao.sample;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -145,6 +146,7 @@ public class MainActivity extends AppCompatActivity implements Model.Observer {
             mContext = context;
         }
 
+        @SuppressLint("NotifyDataSetChanged")
         void setCursor(Note.Cursor cursor) {
             if (mCursor != null) {
                 mCursor.close();
