@@ -20,7 +20,7 @@ import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(minSdk=23)
+@Config(sdk = {24, 37})
 public class ModelTest {
     private Context mContext;
 

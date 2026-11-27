@@ -40,7 +40,7 @@ public class PersistentCookieStore implements CookieStore {
             cookies.add(cookie);
         }
         if (hasExpiredCookies) {
-            sharedPreferences.edit().putStringSet(uri.getHost(), encode(cookies)).apply();
+            store(uri.getHost(), cookies);
         }
         return cookies;
     }
@@ -50,7 +50,7 @@ public class PersistentCookieStore implements CookieStore {
         List<URI> uris = new ArrayList<>();
         for (String key : sharedPreferences.getAll().keySet()) {
             try {
-                uris.add(new URI(key));
+                uris.add(new URI("http", null, key, -1, null, null, null));
             } catch (URISyntaxException e) {
                 Log.w(TAG, "Failed to decode uri " + key, e);
             }
@@ -72,7 +72,7 @@ public class PersistentCookieStore implements CookieStore {
                 cookies.add(cookie);
             }
             if (hasExpiredCookies) {
-                sharedPreferences.edit().putStringSet(key, encode(cookies)).apply();
+                store(key, cookies);
             }
             allCookies.addAll(cookies);
         }
@@ -82,8 +82,9 @@ public class PersistentCookieStore implements CookieStore {
     @Override
     public void add(URI uri, HttpCookie cookie) {
         Collection<HttpCookie> cookies = get(uri);
-        cookies.add(cookie);
-        sharedPreferences.edit().putStringSet(uri.getHost(), encode(cookies)).apply();
+        cookies.remove(cookie);
+        if (!cookie.hasExpired()) cookies.add(cookie);
+        store(uri.getHost(), cookies);
     }
 
     @Override
@@ -95,14 +96,22 @@ public class PersistentCookieStore implements CookieStore {
             return false;
         }
 
-        sharedPreferences.edit().putStringSet(uri.getHost(), encode(cookies)).apply();
+        store(uri.getHost(), cookies);
         return true;
     }
 
     @Override
     public boolean removeAll() {
+        boolean hadCookies = !sharedPreferences.getAll().isEmpty();
         sharedPreferences.edit().clear().apply();
-        return true;
+        return hadCookies;
+    }
+
+    private void store(String host, Collection<HttpCookie> cookies) {
+        SharedPreferences.Editor edit = sharedPreferences.edit();
+        if (cookies.isEmpty()) edit.remove(host);
+        else edit.putStringSet(host, encode(cookies));
+        edit.apply();
     }
 
     private static Set<String> encode(Collection<HttpCookie> cookies) {

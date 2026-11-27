@@ -22,7 +22,7 @@ import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(minSdk=23)
+@Config(sdk = {24, 37})
 public class RemoteModelTest {
     private Context mContext;
     private MockServer mMockServer;

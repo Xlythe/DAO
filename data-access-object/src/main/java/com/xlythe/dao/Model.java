@@ -2,6 +2,7 @@ package com.xlythe.dao;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.database.CursorWrapper;
 import android.util.Log;
 
 import java.util.ArrayList;
@@ -24,7 +25,7 @@ public abstract class Model<T extends Model<T>> extends BaseModel<T> {
 
     private static final Map<Class<? extends Model<?>>, Set<Observer>> OBSERVERS = new HashMap<>();
 
-    public static void registerObserver(Class<? extends Model<?>> clazz, Observer observer) {
+    public static synchronized void registerObserver(Class<? extends Model<?>> clazz, Observer observer) {
         if (DEBUG) Log.d(TAG, "Registering observer for " + clazz);
         Set<Observer> set = OBSERVERS.get(clazz);
         if (set == null) {
@@ -34,7 +35,7 @@ public abstract class Model<T extends Model<T>> extends BaseModel<T> {
         set.add(observer);
     }
 
-    public static void unregisterObserver(Class<? extends Model<?>> clazz, Observer observer) {
+    public static synchronized void unregisterObserver(Class<? extends Model<?>> clazz, Observer observer) {
         if (DEBUG) Log.d(TAG, "Unregistering observer for " + clazz);
         Set<Observer> set = OBSERVERS.get(clazz);
         if (set != null) {
@@ -58,34 +59,43 @@ public abstract class Model<T extends Model<T>> extends BaseModel<T> {
 
     void create() {
         open();
-        getDataSource().create(getModel());
+        try {
+            getDataSource().create(getModel());
+        } finally {
+            close();
+        }
         notifyDataSetChanged();
-        close();
     }
 
     protected void save() {
         open();
-        getDataSource().save(getModel());
+        try {
+            getDataSource().save(getModel());
+        } finally {
+            close();
+        }
         notifyDataSetChanged();
-        close();
     }
 
     protected void delete() {
         open();
-        getDataSource().delete(getModel());
+        try {
+            getDataSource().delete(getModel());
+        } finally {
+            close();
+        }
         notifyDataSetChanged();
-        close();
     }
 
     private void notifyDataSetChanged() {
         if (DEBUG) Log.d(TAG, "Notifying observers for " + getModelClass());
-        if (OBSERVERS.containsKey(getModelClass())) {
-            for (Observer observer : OBSERVERS.get(getModelClass())) {
-                observer.onChange();
-            }
-        } else {
-            if (DEBUG) Log.d(TAG, "No observers found");
+        List<Observer> snapshot;
+        synchronized (Model.class) {
+            Set<Observer> observers = OBSERVERS.get(getModelClass());
+            if (observers == null) return;
+            snapshot = new ArrayList<>(observers);
         }
+        for (Observer observer : snapshot) observer.onChange();
     }
 
     public static class Query<Q extends Model<Q>> {
@@ -157,7 +167,20 @@ public abstract class Model<T extends Model<T>> extends BaseModel<T> {
         public Cursor cursor() {
             Q model = newInstance(getModelClass(), getContext());
             model.open();
-            return model.getDataSource().cursor(mOrderBy, getParams());
+            try {
+                return new CursorWrapper(model.getDataSource().cursor(mOrderBy, getParams())) {
+                    @Override public void close() {
+                        try {
+                            super.close();
+                        } finally {
+                            model.close();
+                        }
+                    }
+                };
+            } catch (RuntimeException e) {
+                model.close();
+                throw e;
+            }
         }
 
         public Q first() {

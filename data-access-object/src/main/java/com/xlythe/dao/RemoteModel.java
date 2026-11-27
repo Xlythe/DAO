@@ -1,6 +1,7 @@
 package com.xlythe.dao;
 
 import android.content.Context;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
@@ -15,6 +16,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static com.xlythe.dao.Util.newInstance;
@@ -69,8 +71,13 @@ public abstract class RemoteModel<T extends RemoteModel<T>> extends Model<T> {
                 handler.post(() -> {
                     final T model = getModel();
                     // Add all the items from the server to the local cache db
-                    Transcriber.inflate(model, response.asJSONObject());
-                    model.save();
+                    try {
+                        Transcriber.inflate(model, response.asJSONObject());
+                        model.save();
+                    } catch (JSONException | RuntimeException e) {
+                        callback.onFailure(e);
+                        return;
+                    }
                     callback.onSuccess(model);
                 });
             }
@@ -95,7 +102,7 @@ public abstract class RemoteModel<T extends RemoteModel<T>> extends Model<T> {
         }
 
         Handler handler = new Handler(Looper.getMainLooper());
-        getServer(getContext()).delete(mUrl + "/" + getUniqueKey(), new Callback<JSONResult>() {
+        getServer(getContext()).delete(Uri.parse(mUrl).buildUpon().appendPath(String.valueOf(getUniqueKey())).build().toString(), new Callback<JSONResult>() {
             @Override
             public void onSuccess(JSONResult response) {
                 handler.post(() -> {
@@ -138,62 +145,7 @@ public abstract class RemoteModel<T extends RemoteModel<T>> extends Model<T> {
         }
 
         public List<Q> all(Callback<List<Q>> callback) {
-            final List<Q> cache = super.all();
-
-            // Don't ping the server if a callback wasn't sent
-            if (callback == null) {
-                Log.w(TAG, "No callback set, returning cached data");
-                return cache;
-            }
-
-            getServer(getContext()).get(mUrl, asJsonObject(), new Callback<JSONResult>() {
-                @Override
-                public void onSuccess(JSONResult response) {
-                    mHandler.post(() -> {
-                        final JSONArray array;
-                        try {
-                            array = response.asJSONArray();
-                        } catch (RuntimeException e) {
-                            onFailure(e);
-                            return;
-                        }
-
-                        final Q model = newInstance(getModelClass(), getContext());
-                        try {
-                            model.open();
-
-                            // Clean up the old cache
-                            model.getDataSource().delete(getParams());
-
-                            // Add all the items from the server to the local cache db
-                            List<Q> list = new ArrayList<>(array.length());
-                            for (int i = 0; i < array.length(); i++) {
-                                Q instance = Transcriber.inflate(newInstance(getModelClass(), getContext()), array.getJSONObject(i));
-                                list.add(instance);
-                                model.getDataSource().save(instance);
-                            }
-
-                            // Give the callback the new data
-                            callback.onSuccess(list);
-                        } catch (JSONException e) {
-                            Log.e(TAG, "Exception parsing fields from JSON Object", e);
-                            callback.onFailure(e);
-                        } finally {
-                            model.close();
-                        }
-                    });
-                }
-
-                @Override
-                public void onFailure(Throwable throwable) {
-                    mHandler.post(() -> {
-                        Log.e(TAG, "Failed: ", throwable);
-                        callback.onFailure(throwable);
-                    });
-                }
-            });
-
-            return cache;
+            return refresh(super.all(), asJsonObject(), true, callback);
         }
 
         @Override
@@ -202,69 +154,7 @@ public abstract class RemoteModel<T extends RemoteModel<T>> extends Model<T> {
         }
 
         public List<Q> limit(int limit, Callback<List<Q>> callback) {
-            final List<Q> cache = super.limit(limit);
-
-            // Don't ping the server if a callback wasn't sent
-            if (callback == null) {
-                Log.w(TAG, "No callback set, returning cached data");
-                return cache;
-            }
-
-            JSONObject params = asJsonObject();
-            try {
-                params.put("limit", limit);
-            } catch (JSONException e) {
-                throw new IllegalArgumentException("Invalid value for key limit", e);
-            }
-
-            getServer(getContext()).get(mUrl, params, new Callback<JSONResult>() {
-                @Override
-                public void onSuccess(JSONResult response) {
-                    mHandler.post(() -> {
-                        final JSONArray array;
-                        try {
-                            array = response.asJSONArray();
-                        } catch (RuntimeException e) {
-                            onFailure(e);
-                            return;
-                        }
-
-                        final Q model = newInstance(getModelClass(), getContext());
-                        try {
-                            model.open();
-
-                            // Clean up the old cache
-                            model.getDataSource().delete(getParams());
-
-                            // Add all the items from the server to the local cache db
-                            List<Q> list = new ArrayList<>(array.length());
-                            for (int i = 0; i < array.length(); i++) {
-                                Q instance = Transcriber.inflate(newInstance(getModelClass(), getContext()), array.getJSONObject(i));
-                                list.add(instance);
-                                model.getDataSource().save(instance);
-                            }
-
-                            // Give the callback the new data
-                            callback.onSuccess(list);
-                        } catch (JSONException e) {
-                            Log.e(TAG, "Exception parsing fields from JSON Object", e);
-                            callback.onFailure(e);
-                        } finally {
-                            model.close();
-                        }
-                    });
-                }
-
-                @Override
-                public void onFailure(Throwable throwable) {
-                    mHandler.post(() -> {
-                        Log.e(TAG, "Failed: ", throwable);
-                        callback.onFailure(throwable);
-                    });
-                }
-            });
-
-            return cache;
+            return refresh(super.limit(limit), pageParams(limit, null), false, callback);
         }
 
         @Override
@@ -273,73 +163,49 @@ public abstract class RemoteModel<T extends RemoteModel<T>> extends Model<T> {
         }
 
         public List<Q> limit(int limit, int offset, Callback<List<Q>> callback) {
-            final List<Q> cache = super.limit(limit, offset);
+            return refresh(super.limit(limit, offset), pageParams(limit, offset), false, callback);
+        }
 
-            // Don't ping the server if a callback wasn't sent
-            if (callback == null) {
-                Log.w(TAG, "No callback set, returning cached data");
-                return cache;
-            }
-
+        private JSONObject pageParams(int limit, Integer offset) {
             JSONObject params = asJsonObject();
             try {
                 params.put("limit", limit);
+                if (offset != null) params.put("offset", offset);
             } catch (JSONException e) {
-                throw new IllegalArgumentException("Invalid value for key limit", e);
+                throw new IllegalArgumentException(e);
             }
-            try {
-                params.put("offset", offset);
-            } catch (JSONException e) {
-                throw new IllegalArgumentException("Invalid value for key offset", e);
-            }
+            return params;
+        }
 
+        private List<Q> refresh(List<Q> cache, JSONObject params, boolean replace, Callback<List<Q>> callback) {
+            if (callback == null) return cache;
+            Param[] selection = getParams();
             getServer(getContext()).get(mUrl, params, new Callback<JSONResult>() {
-                @Override
-                public void onSuccess(JSONResult response) {
+                @Override public void onSuccess(JSONResult response) {
                     mHandler.post(() -> {
-                        final JSONArray array;
+                        List<Q> list = new ArrayList<>();
+                        Q model = newInstance(getModelClass(), getContext());
                         try {
-                            array = response.asJSONArray();
-                        } catch (RuntimeException e) {
-                            onFailure(e);
-                            return;
-                        }
-
-                        final Q model = newInstance(getModelClass(), getContext());
-                        try {
-                            model.open();
-
-                            // Clean up the old cache
-                            model.getDataSource().delete(getParams());
-
-                            // Add all the items from the server to the local cache db
-                            List<Q> list = new ArrayList<>(array.length());
+                            JSONArray array = response.asJSONArray();
                             for (int i = 0; i < array.length(); i++) {
-                                Q instance = Transcriber.inflate(newInstance(getModelClass(), getContext()), array.getJSONObject(i));
-                                list.add(instance);
-                                model.getDataSource().save(instance);
+                                list.add(Transcriber.inflate(newInstance(getModelClass(), getContext()), array.getJSONObject(i)));
                             }
-
-                            // Give the callback the new data
-                            callback.onSuccess(list);
-                        } catch (JSONException e) {
-                            Log.e(TAG, "Exception parsing fields from JSON Object", e);
+                            model.open();
+                            model.getDataSource().cacheResponse(list, selection, replace);
+                        } catch (JSONException | RuntimeException e) {
                             callback.onFailure(e);
+                            return;
                         } finally {
                             model.close();
                         }
+                        callback.onSuccess(list);
                     });
                 }
 
-                @Override
-                public void onFailure(Throwable throwable) {
-                    mHandler.post(() -> {
-                        Log.e(TAG, "Failed: ", throwable);
-                        callback.onFailure(throwable);
-                    });
+                @Override public void onFailure(Throwable throwable) {
+                    mHandler.post(() -> callback.onFailure(throwable));
                 }
             });
-
             return cache;
         }
 
@@ -367,10 +233,7 @@ public abstract class RemoteModel<T extends RemoteModel<T>> extends Model<T> {
             // If we can look up the value directly, rather than as a list, we will prefer to do so.
             String url = mUrl;
             if (primaryKey != null) {
-                if (!url.endsWith("/")) {
-                    url += "/";
-                }
-                url += primaryKey;
+                url = Uri.parse(url).buildUpon().appendPath(primaryKey).build().toString();
             }
 
             JSONObject params = asJsonObject(true);
@@ -386,30 +249,23 @@ public abstract class RemoteModel<T extends RemoteModel<T>> extends Model<T> {
                 @Override
                 public void onSuccess(JSONResult response) {
                     mHandler.post(() -> {
-                        final JSONObject object;
+                        Q result = null;
                         try {
-                            object = getFirst(response);
-                        } catch (RuntimeException e) {
-                            onFailure(e);
+                            JSONObject object = getFirst(response);
+                            if (object != null) {
+                                result = Transcriber.inflate(newInstance(getModelClass(), getContext()), object);
+                                result.open();
+                                try {
+                                    result.getDataSource().save(result);
+                                } finally {
+                                    result.close();
+                                }
+                            }
+                        } catch (JSONException | RuntimeException e) {
+                            callback.onFailure(e);
                             return;
                         }
-
-                        final Q model = newInstance(getModelClass(), getContext());
-                        try {
-                            model.open();
-
-                            // Clean up the old cache
-                            model.getDataSource().delete(getParams());
-
-                            // Add all the items from the server to the local cache db
-                            Q instance = Transcriber.inflate(newInstance(getModelClass(), getContext()), object);
-                            model.getDataSource().save(instance);
-
-                            // Give the callback the new data
-                            callback.onSuccess(instance);
-                        } finally {
-                            model.close();
-                        }
+                        callback.onSuccess(result);
                     });
                 }
 
@@ -427,7 +283,8 @@ public abstract class RemoteModel<T extends RemoteModel<T>> extends Model<T> {
                     }
 
                     try {
-                        return response.asJSONArray().getJSONObject(0);
+                        JSONArray rows = response.asJSONArray();
+                        return rows.length() == 0 ? null : rows.getJSONObject(0);
                     } catch(JSONException | IndexOutOfBoundsException e) {
                         throw new RuntimeException(e);
                     }
@@ -456,19 +313,21 @@ public abstract class RemoteModel<T extends RemoteModel<T>> extends Model<T> {
                 @Override
                 public void onSuccess(JSONResult response) {
                     mHandler.post(() -> {
-                        final Q model = newInstance(getModelClass(), getContext());
+                        Q result = newInstance(getModelClass(), getContext());
                         try {
-                            model.open();
-
-                            // Add all the items from the server to the local cache db
-                            Q instance = Transcriber.inflate(newInstance(getModelClass(), getContext()), response.asJSONObject());
-                            model.getDataSource().save(instance);
-
-                            // Give the callback the new data
-                            callback.onSuccess(instance);
+                            JSONObject fields = Transcriber.getJSONObject(cache);
+                            Transcriber.inflate(result, fields);
+                            Transcriber.inflate(result, response.asJSONObject());
+                            result.open();
+                            result.getDataSource().cacheResponse(Collections.singletonList(result),
+                                    new Param[]{new Param(_ID, cache.get_Id())}, true);
+                        } catch (JSONException | RuntimeException e) {
+                            callback.onFailure(e);
+                            return;
                         } finally {
-                            model.close();
+                            result.close();
                         }
+                        callback.onSuccess(result);
                     });
                 }
 

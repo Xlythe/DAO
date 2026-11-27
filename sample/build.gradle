@@ -1,13 +1,12 @@
 apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
 
 android {
-    compileSdkVersion 34
+    compileSdk 37
 
     defaultConfig {
         applicationId "com.xlythe.dao.sample"
         minSdkVersion 19
-        targetSdkVersion 34
+        targetSdkVersion 37
         versionCode 1
         versionName "1.0"
         vectorDrawables.useSupportLibrary = true
@@ -15,7 +14,7 @@ android {
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
     compileOptions {
@@ -31,5 +30,4 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.core:core-ktx:1.12.0'
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 }

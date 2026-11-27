@@ -179,3 +179,19 @@ And lastly, don't forget the internet permission.
 ```xml
 <uses-permission android:name="android.permission.INTERNET" />
 ```
+
+Building and testing
+--------------------
+Use JDK 21, Gradle 9.9.2, and the Android 37 SDK to build the library and sample.
+Both retain a minimum SDK of 19. The library runs its Robolectric suite on APIs
+24 and 37. To run the tests and generate the HTML and XML coverage reports:
+
+```sh
+gradle :data-access-object:createDebugUnitTestCoverageReport :sample:assembleDebug
+```
+
+Reports are written to `data-access-object/build/reports/coverage/test/debug/`.
+For a remote cache, use a stable `@Unique` field from the server to identify
+the same record across pages. A successful `all(callback)` replaces the cached
+rows matching that query. A page or first-record request updates only returned
+records. A malformed response leaves the previous cached list available.

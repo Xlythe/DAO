@@ -27,18 +27,19 @@ public class Transcriber {
     static <A extends BaseModel<A>> A inflate(A instance, Cursor cursor) {
         try {
             for (Field field : instance.getFields()) {
+                int index = cursor.getColumnIndexOrThrow(getName(field));
                 if (isInt(field)) {
-                    field.setInt(instance, cursor.getInt(cursor.getColumnIndex(getName(field))));
+                    field.setInt(instance, cursor.getInt(index));
                 } else if (isLong(field)) {
-                    field.setLong(instance, cursor.getLong(cursor.getColumnIndex(getName(field))));
+                    field.setLong(instance, cursor.getLong(index));
                 } else if (isFloat(field)) {
-                    field.setFloat(instance, cursor.getFloat(cursor.getColumnIndex(getName(field))));
+                    field.setFloat(instance, cursor.getFloat(index));
                 } else if (isBoolean(field)) {
-                    field.setBoolean(instance, 1 == cursor.getInt(cursor.getColumnIndex(getName(field))));
+                    field.setBoolean(instance, 1 == cursor.getInt(index));
                 } else if (isString(field)) {
-                    field.set(instance, cursor.getString(cursor.getColumnIndex(getName(field))));
+                    field.set(instance, cursor.getString(index));
                 } else if (isByteArray(field)) {
-                    field.set(instance, cursor.getBlob(cursor.getColumnIndex(getName(field))));
+                    field.set(instance, cursor.getBlob(index));
                 } else {
                     throw new UnsupportedClassVersionError(field.getType() + " is not supported");
                 }
@@ -52,7 +53,7 @@ public class Transcriber {
     /**
      * Updates the values of the instance with the JSONObject's values
      */
-    static <A extends BaseModel<A>> A inflate(A instance, JSONObject object) {
+    static <A extends BaseModel<A>> A inflate(A instance, JSONObject object) throws JSONException {
         try {
             for (Field field : instance.getFields()) {
                 // Special case for _ID, which is a field we add ourselves.
@@ -60,8 +61,8 @@ public class Transcriber {
                     continue;
                 }
 
-                // Ignore null values, since our instance will default all fields to null
                 if (object.isNull(getName(field))) {
+                    if (object.has(getName(field)) && !field.getType().isPrimitive()) field.set(instance, null);
                     continue;
                 }
 
@@ -84,8 +85,6 @@ public class Transcriber {
             }
         } catch (IllegalAccessException e) {
             Log.e(TAG, "Access wasn't public. Should never happen, though.", e);
-        } catch (JSONException e) {
-            Log.e(TAG, "Trouble parsing the json object", e);
         }
         return instance;
     }
@@ -108,7 +107,7 @@ public class Transcriber {
                 } else if (isString(field)) {
                     field.set(instance, param.getUnformattedValue());
                 } else if (isByteArray(field)) {
-                    field.set(instance, Base64.decode(param.getValue(), Base64.DEFAULT));
+                    field.set(instance, param.getUnformattedValue() == null ? null : Base64.decode(param.getValue(), Base64.DEFAULT));
                 } else {
                     throw new UnsupportedClassVersionError(field.getType() + " is not supported");
                 }

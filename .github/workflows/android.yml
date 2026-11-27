@@ -1,0 +1,38 @@
+name: Android
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c
+        with:
+          gradle-version: '9.9.2'
+      - name: Install Android 37
+        run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "build-tools;36.0.0"'
+      - name: Test the library, measure coverage and check the sample
+        run: >
+          gradle --max-workers=2
+          :data-access-object:createDebugUnitTestCoverageReport :data-access-object:lintDebug
+          :data-access-object:assembleRelease :sample:lintDebug :sample:assembleDebug
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dao-test-reports
+          path: |
+            data-access-object/build/reports/tests/
+            data-access-object/build/reports/coverage/
+            data-access-object/build/reports/lint-results-debug.html
+            sample/build/reports/lint-results-debug.html
