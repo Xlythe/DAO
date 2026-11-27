@@ -109,6 +109,25 @@ public class PersistenceRegressionTest {
         }
     }
 
+    @Test public void bulkDeletionNotifiesOnceOnlyWhenRowsWereRemoved() {
+        new MockModel.Query(context).myInt(2).insert();
+        new MockModel.Query(context).myInt(2).insert();
+        AtomicInteger calls = new AtomicInteger();
+        Model.Observer observer = () -> {
+            calls.incrementAndGet();
+            assertEquals(0, new MockModel.Query(context).count());
+        };
+        MockModel.registerObserver(observer);
+        try {
+            new MockModel.Query(context).myInt(1).delete();
+            assertEquals(0, calls.get());
+            new MockModel.Query(context).myInt(2).delete();
+            assertEquals(1, calls.get());
+        } finally {
+            MockModel.unregisterObserver(observer);
+        }
+    }
+
     @Test public void remotePageRefreshPreservesRowsOutsideThatPage() {
         remoteRow(1, "One");
         long oldId = remoteRow(2, "Old").get_Id();

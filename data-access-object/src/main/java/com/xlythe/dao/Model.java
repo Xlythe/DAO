@@ -40,6 +40,7 @@ public abstract class Model<T extends Model<T>> extends BaseModel<T> {
         Set<Observer> set = OBSERVERS.get(clazz);
         if (set != null) {
             set.remove(observer);
+            if (set.isEmpty()) OBSERVERS.remove(clazz);
         }
     }
 
@@ -88,10 +89,14 @@ public abstract class Model<T extends Model<T>> extends BaseModel<T> {
     }
 
     private void notifyDataSetChanged() {
-        if (DEBUG) Log.d(TAG, "Notifying observers for " + getModelClass());
+        notifyDataSetChanged(getModelClass());
+    }
+
+    private static void notifyDataSetChanged(Class<? extends Model<?>> modelClass) {
+        if (DEBUG) Log.d(TAG, "Notifying observers for " + modelClass);
         List<Observer> snapshot;
         synchronized (Model.class) {
-            Set<Observer> observers = OBSERVERS.get(getModelClass());
+            Set<Observer> observers = OBSERVERS.get(modelClass);
             if (observers == null) return;
             snapshot = new ArrayList<>(observers);
         }
@@ -202,12 +207,14 @@ public abstract class Model<T extends Model<T>> extends BaseModel<T> {
 
         public void delete() {
             Q model = newInstance(getModelClass(), getContext());
+            int removed;
             try {
                 model.open();
-                model.getDataSource().delete(getParams());
+                removed = model.getDataSource().delete(getParams());
             } finally {
                 model.close();
             }
+            if (removed > 0) notifyDataSetChanged(getModelClass());
         }
 
         protected final Context getContext() {
