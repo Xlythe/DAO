@@ -1,6 +1,7 @@
 package com.xlythe.dao.remote;
 
 import android.content.Context;
+import android.net.Uri;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
@@ -15,7 +16,6 @@ import com.android.volley.toolbox.HttpHeaderParser;
 import com.android.volley.toolbox.Volley;
 import com.xlythe.dao.Callback;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
@@ -45,19 +45,16 @@ public class DefaultServer implements Server {
             Log.d(TAG, "get=" + url + ", params=" + params);
         }
 
-        StringBuilder encodedUrl = new StringBuilder(url);
+        mRequestQueue.add(new JsonRequest(Request.Method.GET, queryUrl(url, params), callback::onSuccess, callback::onFailure));
+    }
+
+    static String queryUrl(String url, JSONObject params) {
+        Uri.Builder builder = Uri.parse(url).buildUpon();
         for (Iterator<String> it = params.keys(); it.hasNext();) {
             String key = it.next();
-            encodedUrl.append(encodedUrl.toString().contains("?") ? "&" : "?");
-            try {
-                encodedUrl.append(key).append("=").append(params.get(key));
-            } catch (JSONException e) {
-                // Should not happen
-                throw new RuntimeException(e);
-            }
+            builder.appendQueryParameter(key, params.optString(key));
         }
-
-        mRequestQueue.add(new JsonRequest(Request.Method.GET, encodedUrl.toString(), callback::onSuccess, callback::onFailure));
+        return builder.build().toString();
     }
 
     @Override

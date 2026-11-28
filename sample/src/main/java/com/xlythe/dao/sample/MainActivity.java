@@ -90,6 +90,7 @@ public class MainActivity extends AppCompatActivity implements Model.Observer {
 
     @Override
     protected void onDestroy() {
+        Note.unregisterObserver(this);
         mNoteAdapter.close();
         super.onDestroy();
     }

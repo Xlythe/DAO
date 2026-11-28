@@ -101,7 +101,7 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
         try {
             mDataSource.open();
         } catch(SQLException e) {
-            Log.e(TAG, "Failed to open database", e);
+            throw new IllegalStateException("Failed to open database", e);
         }
     }
 
@@ -112,43 +112,43 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
     @Override
     public int hashCode() {
         int result = 17;
-        for (Field field : mFields) {
-            if (isUnique(field)) {
-                try {
-                    Object o = field.get(this);
-                    result = 31 * result + ((o == null) ? 0 : o.hashCode());
-                } catch (IllegalAccessException e) {
-                    Log.e(TAG, "Should not happen", e);
-                }
+        boolean hasKey = false;
+        try {
+            for (Field field : mFields) {
+                if (!isUnique(field)) continue;
+                Object key = field.get(this);
+                hasKey |= key != null;
+                result = 31 * result + (key instanceof byte[] ? Arrays.hashCode((byte[]) key)
+                        : key == null ? 0 : key.hashCode());
             }
+        } catch (IllegalAccessException e) {
+            throw new IllegalStateException(e);
         }
-        return result;
+        if (hasKey) return result;
+        return _id == 0 ? System.identityHashCode(this) : (int) (_id ^ (_id >>> 32));
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (o == null) return false;
-        if (o.getClass() != getClass()) return false;
-        for (Field field : mFields) {
-            if (isUnique(field)) {
-                try {
-                    Object me = field.get(this);
-                    Object them = field.get(o);
-                    if (me == them) {
-                        continue;
-                    } else if (me == null) {
-                        return false;
-                    }
-
-                    if (!me.equals(them)) {
-                        return false;
-                    }
-                } catch (IllegalAccessException e) {
-                    Log.e(TAG, "Should not happen", e);
+    public boolean equals(Object other) {
+        if (this == other) return true;
+        if (other == null || other.getClass() != getClass()) return false;
+        boolean hasKey = false;
+        try {
+            for (Field field : mFields) {
+                if (!isUnique(field)) continue;
+                Object key = field.get(this);
+                Object theirs = field.get(other);
+                hasKey |= key != null;
+                if (key instanceof byte[]) {
+                    if (!Arrays.equals((byte[]) key, (byte[]) theirs)) return false;
+                } else if (!java.util.Objects.equals(key, theirs)) {
+                    return false;
                 }
             }
+        } catch (IllegalAccessException e) {
+            throw new IllegalStateException(e);
         }
-        return true;
+        return hasKey || (_id != 0 && _id == ((BaseModel<?>) other)._id);
     }
 
     Field[] getFields() {
@@ -229,10 +229,13 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
 
         private Param[] getUniqueParams(T instance) {
             ArrayList<Param> params = new ArrayList<>();
+            boolean hasKey = false;
             try {
                 for (Field field : getFields()) {
-                    if (isUnique(field) && field.get(instance) != null) {
-                        params.add(new Param(getName(field), field.get(instance)));
+                    if (isUnique(field)) {
+                        Object key = field.get(instance);
+                        hasKey |= key != null;
+                        params.add(new Param(getName(field), key));
                     }
                 }
             } catch (IllegalAccessException e) {
@@ -240,8 +243,8 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
             }
 
             // If no unique values were set, use the _id value instead.
-            if (params.isEmpty()) {
-                return new Param[] { new Param(_ID, _id) };
+            if (!hasKey) {
+                return new Param[] { new Param(_ID, instance._id) };
             }
 
             // Otherwise, ignore _id and use their unique values
@@ -267,18 +270,35 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
                 if (query.length() > 0) {
                     query.append(" AND ");
                 }
-                query.append(param.getKey());
-                query.append(" = ?");
+                String column = param.getKey();
+                if (param.getUnformattedValue() == null) {
+                    query.append(column).append(" IS NULL");
+                } else if (param.getUnformattedValue() instanceof byte[]) {
+                    // Android selectionArgs bind strings. hex(NULL) and hex(an empty blob) are both empty.
+                    query.append(column).append(" IS NOT NULL AND hex(").append(column).append(") = ?");
+                } else {
+                    query.append(column).append(" = ?");
+                }
             }
             return query.toString();
         }
 
         private String[] createParameterizedArgs(Param... params) {
-            String[] args = new String[params.length];
-            for (int i=0; i<args.length; i++) {
-                args[i] = params[i].getParameterizedValue();
+            List<String> args = new ArrayList<>();
+            for (Param param : params) {
+                Object value = param.getUnformattedValue();
+                if (value instanceof byte[]) {
+                    StringBuilder hex = new StringBuilder();
+                    for (byte b : (byte[]) value) {
+                        hex.append("0123456789ABCDEF".charAt((b & 0xff) >> 4));
+                        hex.append("0123456789ABCDEF".charAt(b & 0xf));
+                    }
+                    args.add(hex.toString());
+                } else if (value != null) {
+                    args.add(param.getParameterizedValue());
+                }
             }
-            return args;
+            return args.toArray(new String[0]);
         }
 
         public String getDbName() {
@@ -328,17 +348,38 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
             String[] queryArgs = createParameterizedArgs(params);
             if (DEBUG) Log.d(TAG, "Updating existing entry. query{" + printQueryStatementForDebugging(params) + "}");
             ContentValues values = getContentValues(instance);
+            values.remove(_ID);
             database.updateWithOnConflict(getTableName(), values, query, queryArgs, SQLiteDatabase.CONFLICT_REPLACE);
         }
 
         public void save(T instance) {
             if (DEBUG) Log.d(TAG, "Saving");
             Param[] params = getUniqueParams(instance);
-            long count = count(params);
-            if (count == 0) {
-                create(instance);
-            } else {
-                update(instance);
+            database.beginTransaction();
+            try {
+                try (Cursor row = database.query(getTableName(), new String[]{_ID}, createParameterizedQuery(params),
+                        createParameterizedArgs(params), null, null, null, "1")) {
+                    if (row.moveToFirst()) {
+                        instance._id = row.getLong(0);
+                        update(instance);
+                    } else {
+                        create(instance);
+                    }
+                }
+                database.setTransactionSuccessful();
+            } finally {
+                database.endTransaction();
+            }
+        }
+
+        void cacheResponse(List<T> rows, Param[] selection, boolean replace) {
+            database.beginTransaction();
+            try {
+                if (replace) delete(selection);
+                for (T row : rows) save(row);
+                database.setTransactionSuccessful();
+            } finally {
+                database.endTransaction();
             }
         }
 
@@ -367,86 +408,39 @@ public abstract class BaseModel<T extends BaseModel<T>> implements Serializable 
         }
 
         public List<T> query(String orderBy, Param... params) {
-            List<T> list = new ArrayList<>();
-            String query = createParameterizedQuery(params);
-            String[] queryArgs = createParameterizedArgs(params);
-            Cursor cursor = database.query(getTableName(), getColumns(), query, queryArgs, null, null, orderBy);
-            cursor.moveToFirst();
-            while (!cursor.isAfterLast()) {
-                T newInstance = newInstance(getModelClass(), mContext);
-                inflate(newInstance, cursor);
-                list.add(newInstance);
-                cursor.moveToNext();
-            }
-            cursor.close();
-            return list;
+            return readRows(orderBy, null, params);
         }
 
         public List<T> query(String orderBy, int limit, Param... params) {
-            List<T> list = new ArrayList<>();
-            String query = createParameterizedQuery(params);
-            String[] queryArgs = createParameterizedArgs(params);
-            Cursor cursor = database.query(getTableName(), getColumns(), query, queryArgs, null, null, orderBy, Integer.toString(limit));
-            cursor.moveToFirst();
-            while (!cursor.isAfterLast()) {
-                T newInstance = newInstance(getModelClass(), mContext);
-                inflate(newInstance, cursor);
-                list.add(newInstance);
-                cursor.moveToNext();
-            }
-            cursor.close();
-            return list;
+            return query(orderBy, limit, 0, params);
         }
 
         public List<T> query(String orderBy, int limit, int offset, Param... params) {
+            if (limit < 0 || offset < 0) throw new IllegalArgumentException("Limit and offset must be non-negative");
+            return readRows(orderBy, offset + "," + limit, params);
+        }
+
+        private List<T> readRows(String orderBy, String limit, Param... params) {
             List<T> list = new ArrayList<>();
-            String query = createParameterizedQuery(params);
-            String[] queryArgs = createParameterizedArgs(params);
-            Cursor cursor = database.query(getTableName(), getColumns(), query, queryArgs, null, null, orderBy, offset + "," + limit);
-            cursor.moveToFirst();
-            while (!cursor.isAfterLast()) {
-                T newInstance = newInstance(getModelClass(), mContext);
-                inflate(newInstance, cursor);
-                list.add(newInstance);
-                cursor.moveToNext();
+            try (Cursor rows = database.query(getTableName(), getColumns(), createParameterizedQuery(params),
+                    createParameterizedArgs(params), null, null, orderBy, limit)) {
+                while (rows.moveToNext()) list.add(inflate(newInstance(getModelClass(), mContext), rows));
             }
-            cursor.close();
             return list;
         }
 
         public T first(String orderBy, Param... params) {
-            T instance = null;
-            String query = createParameterizedQuery(params);
-            String[] queryArgs = createParameterizedArgs(params);
-            if (DEBUG) Log.d(TAG, "First. query{" + printQueryStatementForDebugging(params) + "}");
-            Cursor cursor = database.query(getTableName(), getColumns(), query, queryArgs, null, null, orderBy, "1");
-            cursor.moveToFirst();
-            if (!cursor.isAfterLast()) {
-                instance = newInstance(getModelClass(), mContext);
-                inflate(instance, cursor);
-            }
-            cursor.close();
-            return instance;
+            List<T> rows = readRows(orderBy, "1", params);
+            return rows.isEmpty() ? null : rows.get(0);
         }
 
         public Cursor cursor(String orderBy, Param... params) {
-            String query = createParameterizedQuery(params);
-            String[] queryArgs = createParameterizedArgs(params);
-            return database.query(getTableName(), getColumns(), query, queryArgs, null, null, orderBy);
+            return database.query(getTableName(), getColumns(), createParameterizedQuery(params),
+                    createParameterizedArgs(params), null, null, orderBy);
         }
 
         public List<T> getAll() {
-            List<T> list = new ArrayList<>();
-            Cursor cursor = database.query(getTableName(), getColumns(), null, null, null, null, null);
-            cursor.moveToFirst();
-            while (!cursor.isAfterLast()) {
-                T newInstance = newInstance(getModelClass(), mContext);
-                inflate(newInstance, cursor);
-                list.add(newInstance);
-                cursor.moveToNext();
-            }
-            cursor.close();
-            return list;
+            return query(null);
         }
 
         public int delete(Param... params) {
