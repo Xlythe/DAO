@@ -19,6 +19,8 @@ android {
     testOptions.unitTests {
         includeAndroidResources = true
         all {
+            // Robolectric loads an Android runtime for each SDK in the test range.
+            maxHeapSize = "2g"
             jacoco {
                 includeNoLocationClasses = true
                 includes = ['com.xlythe.dao.*']
