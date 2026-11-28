@@ -11,7 +11,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
-import org.robolectric.annotation.Config;
 
 import java.util.Arrays;
 import java.util.List;
@@ -26,7 +25,6 @@ import static org.junit.Assert.*;
 import static org.robolectric.Shadows.shadowOf;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = {24, 37})
 public class PersistenceRegressionTest {
     private final Context context = RuntimeEnvironment.getApplication();
     private final MockServer server = new MockServer();

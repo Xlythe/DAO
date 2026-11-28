@@ -6,14 +6,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
-import org.robolectric.annotation.Config;
 import java.net.HttpCookie;
 import java.net.URI;
 
 import static org.junit.Assert.*;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = {24, 37})
 public class TransportTest {
     @Test public void queryParametersRoundTripSpecialCharactersAndPreserveTheOriginalUrl() throws Exception {
         String value = "a & b=+/東京";

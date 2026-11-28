@@ -183,8 +183,8 @@ And lastly, don't forget the internet permission.
 Building and testing
 --------------------
 Use JDK 21, Gradle 9.9.2, and the Android 37 SDK to build the library and sample.
-Both retain a minimum SDK of 19. The library runs its Robolectric suite on APIs
-24 and 37. To run the tests and generate the HTML and XML coverage reports:
+Both retain a minimum SDK of 19. DAO tests inherit a shared Robolectric configuration with `minSdk=23` and run on
+every SDK supported by the runner in that range. New tests inherit this setting automatically. To run the tests and generate the HTML and XML coverage reports:
 
 ```sh
 gradle :data-access-object:createDebugUnitTestCoverageReport :sample:assembleDebug
